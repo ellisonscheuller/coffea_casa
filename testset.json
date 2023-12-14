@@ -1,0 +1,8 @@
+{ 
+    "test_files" : [
+        "root://xcache//store/group/lpctrig/jngadiub/L1NanoRun3-130X-wScores/EphZeroBias2023C/crab_EphZeroBias2023C/231116_190250/0000/L1Nano_wScores_1.root",
+        "root://xcache//store/group/lpctrig/jngadiub/L1NanoRun3-130X-wScores/EphZeroBias2023C/crab_EphZeroBias2023C/231116_190250/0000/L1Nano_wScores_10.root",
+        "root://xcache//store/group/lpctrig/jngadiub/L1NanoRun3-130X-wScores/EphZeroBias2023C/crab_EphZeroBias2023C/231116_190250/0000/L1Nano_wScores_11.root",
+        "root://xcache//store/group/lpctrig/jngadiub/L1NanoRun3-130X-wScores/EphZeroBias2023C/crab_EphZeroBias2023C/231116_190250/0000/L1Nano_wScores_9.root"
+    ]
+}
