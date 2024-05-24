@@ -1,8 +1,0 @@
-{ 
-    "Scouting_Run380310" : {
-        "files" : {
-	 	"root://hip-cms-se.csc.fi//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4001.root":"Events",
-		"root://hip-cms-se.csc.fi//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4002.root":"Events"
-	}
-    }
-}
