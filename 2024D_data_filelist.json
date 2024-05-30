@@ -556,5 +556,32 @@
             "root://xcache//store/user/nzipper/L1AD_Ntuples/Run3_2024_Data_Production-wScores/CRAB_UserFiles/crab_JetMET_Run2024D_PromptReco_v1_Run380349/240509_155442/0000/L1Nano_wScores_8.root" : "Events",
             "root://xcache//store/user/nzipper/L1AD_Ntuples/Run3_2024_Data_Production-wScores/CRAB_UserFiles/crab_JetMET_Run2024D_PromptReco_v1_Run380349/240509_155442/0000/L1Nano_wScores_9.root" : "Events"
         }
+    },
+    "JetMET_Run380310_test_wScores" : {
+        "files" : { "root://xcache//store/user/nzipper/L1AD_Ntuples/Run3_2024_Data_Production-wScores/CRAB_UserFiles/crab_JetMET_Run2024D_PromptReco_v1_Run380310/240509_155155/0000/L1Nano_wScores_1.root" : "Events"
+        }
+     },
+    "JetMET_Run380310_test" : {
+        "files" : {"root://xcache//store/user/nzipper/L1AD_Ntuples/Run3_2024_Data_Production/JetMET0_Run2024D_PromptReco_v1_Run380310/JetMET0/crab_JetMET0_Run2024D_PromptReco_v1_Run380310/240508_165346/0000/out_1.root" : "Events"
+        }
+     },
+    "Scouting_Run380360_test" : {
+       "files" : {
+"root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4001.root":"Events"
+       }
+    },
+      "Scouting_Run380310" : {
+        "files" : {
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4001.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4003.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4004.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4005.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4006.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4007.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4008.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4009.root":"Events",
+            "root://xcache//store/user/pinkaew/scouting_nano_stable/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380255-380649/240514_222828/0004/step2_NANO_4010.root":"Events"
+        }
     }
+
 }
