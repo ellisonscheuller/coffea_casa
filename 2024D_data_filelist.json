@@ -588,6 +588,11 @@
 "root://xcache//store/user/pinkaew/scouting_nano_prod_golden/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380385-380470_Golden/240517_205837/0000/scouting_nano_1.root":"Events"
        }
     },
+    "Scouting_test" : {
+        "files" : {
+"root://xcache//store/user/pinkaew/scouting_nano_dev0p3_golden/ScoutingPFMonitor/crab_ScoutingPFMonitor_Run2024E-PromptReco-v1_380963-381380_Golden//240715_232037/0000/scouting_nano_1.root":"Events"
+       }
+    },
     "Scouting_380470" : {
        "files" : {
 "root://xcache//store/user/pinkaew/scouting_nano_prod_golden/ScoutingPFRun3/crab_ScoutingPFRun3_Run2024D-v1_380385-380470_Golden/240517_205837/0000/scouting_nano_100.root":"Events",
