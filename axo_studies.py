@@ -33,11 +33,31 @@ from coffea.dataset_tools import (
     preprocess,
 )
 
-# local imports
-import plotting_utils
-
 ###################################################################################################
-# CHOOSE WHICH HISTS TO PROCESS (COMMENT OUT UNWANTED HISTS)
+# PROCESSING OPTIONS
+
+json_filename = "2024_data_filelist.json"
+dataset_name = "Scouting_2024I"
+has_scores = True # whether the files contain axo anomaly score branches
+is_scouting = True # whether the files are scouting nanos
+axo_v = "v4" # which axo version to use for score hists
+n_files = 10 # number of files to process
+coffea_step_size = 50_000 # step size for coffea processor
+coffea_files_per_batch = 1 # files per batch for coffea processor
+
+# which reco objects to process
+reco_objects = [
+    "ScoutingPFJet",
+    "ScoutingElectron",
+    "ScoutingMuonNoVtx",
+    "ScoutingPhoton"
+] 
+# which l1 objects to process
+l1_objects = [
+    "L1Jet"
+] 
+
+# which hists to save (comment out unwanted)
 hist_selection = {
     "1d_scalar": [
         "anomaly_score"                       # axol1tl anomaly score
@@ -87,9 +107,29 @@ hist_selection = {
         "anomaly_score_m",
     ],
     "dimuon": [
-        ""
+        "m_log",                               # log axis for dimuon invariant mass
+        "m_low",                               # low range axis for dimuon invariant mass
+        "m_mid",                               # mid range axis for dimuon invariant mass
+        "m",                                   # full range axis for dimuon invariant mass
     ]
 }
+
+# which triggers to save (comment out unwanted)
+triggers = [
+    'DST_PFScouting_AXOLoose', 
+    'DST_PFScouting_AXONominal', 
+    'DST_PFScouting_AXOTight', 
+    'DST_PFScouting_AXOVLoose', 
+    'DST_PFScouting_AXOVTight',
+    'DST_PFScouting_CICADALoose', 
+    'DST_PFScouting_CICADAMedium', 
+    'DST_PFScouting_CICADATight', 
+    'DST_PFScouting_CICADAVLoose', 
+    'DST_PFScouting_CICADAVTight',
+    'DST_PFScouting_DoubleMuon',
+    'DST_PFScouting_JetHT',
+    'DST_PFScouting_ZeroBias'
+]
 
 ###################################################################################################
 # DEFINE SCHEMA
@@ -615,6 +655,49 @@ class MakeAXOHists (processor.ProcessorABC):
 ###################################################################################################
 # DEFINE MAIN FUNCTION
 def main():
+    json_filename = "2024_data_filelist.json"
+    dataset_name = "Scouting_2024I"
+    
+    with open(json_filename) as json_file:
+        dataset = json.load(json_file)
+    
+    dataset_skimmed = {dataset_name: {'files': {}}}
+    i = 0
+    for key, value in dataset[dataset_name]['files'].items():
+        if (i<n_files):
+            dataset_skimmed[dataset_name]['files'][key] = value
+        i+=1
+        
+    dataset_runnable, dataset_updated = preprocess(
+        dataset_skimmed,
+        align_clusters=False,
+        step_size=coffea_step_size,
+        files_per_batch=coffea_files_per_batch,
+        skip_bad_files=True,
+        save_form=False,
+    )
+
+    tstart = time.time()
+    
+    to_compute = apply_to_fileset(
+        MakeAXOHists(trigger_paths=triggers, 
+                     hists_to_process=hist_selection,
+                     has_scores=has_scores, 
+                     axo_version=axo_v
+                     is_scouting=is_scouting),
+        max_chunks(dataset_runnable, 300000),
+        schemaclass=ScoutingNanoAODSchema,
+        uproot_options={"allow_read_errors_with_report": (OSError, TypeError, KeyError)}
+    )
+        
+    (hist_result,) = dask.compute(to_compute)
+    print(f'{time.time()-tstart:.1f}s to process')
+    hist_result = hist_result[0]
+
+    #Save file 
+    with open(f'hist_result_{dataset_name}_{n_files}files.pkl', 'wb') as file:
+            # dump information to that file
+            dill.dump(hist_result, file)
     
 
 ###################################################################################################
