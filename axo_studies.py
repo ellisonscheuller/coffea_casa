@@ -41,7 +41,7 @@ dataset_name = "Scouting_2024I"
 has_scores = True # whether the files contain axo anomaly score branches
 is_scouting = True # whether the files are scouting nanos
 axo_v = "v4" # which axo version to use for score hists
-n_files = 10 # number of files to process
+n_files = 50 # number of files to process
 coffea_step_size = 50_000 # step size for coffea processor
 coffea_files_per_batch = 1 # files per batch for coffea processor
 
@@ -116,16 +116,16 @@ hist_selection = {
 
 # which triggers to save (comment out unwanted)
 triggers = [
-    'DST_PFScouting_AXOLoose', 
+    # 'DST_PFScouting_AXOLoose', 
     'DST_PFScouting_AXONominal', 
     'DST_PFScouting_AXOTight', 
-    'DST_PFScouting_AXOVLoose', 
+    # 'DST_PFScouting_AXOVLoose', 
     'DST_PFScouting_AXOVTight',
-    'DST_PFScouting_CICADALoose', 
-    'DST_PFScouting_CICADAMedium', 
-    'DST_PFScouting_CICADATight', 
-    'DST_PFScouting_CICADAVLoose', 
-    'DST_PFScouting_CICADAVTight',
+    # 'DST_PFScouting_CICADALoose', 
+    # 'DST_PFScouting_CICADAMedium', 
+    # 'DST_PFScouting_CICADATight', 
+    # 'DST_PFScouting_CICADAVLoose', 
+    # 'DST_PFScouting_CICADAVTight',
     'DST_PFScouting_DoubleMuon',
     'DST_PFScouting_JetHT',
     'DST_PFScouting_ZeroBias'
@@ -244,8 +244,8 @@ def storeHistToDict_1d(
     return hist_dict
 
 def storeHistToDict_2d(
-    hist_dict, dataset_axis, observable1_axis, observable2_axis
-    dataset, observable1, observable2
+    hist_dict, dataset_axis, observable1_axis, observable2_axis,
+    dataset, observable1, observable2,
     hist_name, trigger_path, observable1_name, observable2_name
 ):
     kwargs = {observable1_name: observable1,
@@ -402,23 +402,23 @@ class MakeAXOHists (processor.ProcessorABC):
             cutflow[trigger_path] = ak.num(events_trig.event, axis=0)
             
             # get scalar branches (l1 objects)
-            if (("l1ht" in hists_to_process["1d_scalar"]) or ("l1met" in hists_to_process["1d_scalar"])):
+            if (("l1ht" in self.hists_to_process["1d_scalar"]) or ("l1met" in self.hists_to_process["1d_scalar"])):
                 l1_etsums = events_trig.L1EtSum
-                if ("l1ht" in hists_to_process["1d_scalar"]):
+                if ("l1ht" in self.hists_to_process["1d_scalar"]):
                     l1_ht = l1_etsums[(events_trig.L1EtSum.etSumType==1) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.ht_axis, 
                                                    dataset, ak.flatten(l1_ht.pt), "l1ht", trigger_path, "ht")
-                if ("l1met" in hists_to_process["1d_scalar"]):
+                if ("l1met" in self.hists_to_process["1d_scalar"]):
                     l1_met = l1_etsums[(events_trig.L1EtSum.etSumType==2) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.met_axis, 
                                                    dataset, ak.flatten(l1_met.pt), "l1met", trigger_path, "met")
-            if ("total_l1mult" in hists_to_process["1d_scalar"]):
+            if ("total_l1mult" in self.hists_to_process["1d_scalar"]):
                 l1_total_mult = (ak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
                                  + ak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
                                  + ak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.mult_axis, 
                                                dataset, l1_total_mult, "total_l1mult", trigger_path, "mult")
-            if ("total_l1pt" in hists_to_process["1d_scalar"]):
+            if ("total_l1pt" in self.hists_to_process["1d_scalar"]):
                 l1_total_pt = (ak.sum(events_trig.L1Jet.pt[events_trig.L1Jet.bx == 0],axis=1) 
                                + ak.sum(events_trig.L1Mu.pt[events_trig.L1Mu.bx == 0],axis=1) 
                                + ak.sum(events_trig.L1EG.pt[events_trig.L1EG.bx ==0],axis=1))
@@ -426,19 +426,19 @@ class MakeAXOHists (processor.ProcessorABC):
                                                dataset, l1_total_pt, "total_l1pt", trigger_path, "pt")
                 
             # get scalar branches (scouting objects)
-            if ("scoutinght" in hists_to_process["1d_scalar"]):
+            if ("scoutinght" in self.hists_to_process["1d_scalar"]):
                 scouting_ht = ak.sum(events_trig.ScoutingPFJet.pt,axis=1)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.ht_axis, 
-                                               dataset, ak.flatten(scouting_ht.pt), "scoutinght", trigger_path, "ht")
-            if ("scoutingmet" in hists_to_process["1d_scalar"]):
+                                               dataset, scouting_ht, "scoutinght", trigger_path, "ht")
+            if ("scoutingmet" in self.hists_to_process["1d_scalar"]):
                 scouting_met = events_trig.ScoutingMET.pt
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.met_axis, 
-                                               dataset, ak.flatten(scouting_met.pt), "scoutingmet", trigger_path, "met")
-            if ("total_scoutingmult" in hists_to_process["1d_scalar"]):
+                                               dataset, scouting_met, "scoutingmet", trigger_path, "met")
+            if ("total_scoutingmult" in self.hists_to_process["1d_scalar"]):
                 scouting_total_mult = ak.num(events_trig.ScoutingPFJet) + ak.num(events_trig.ScoutingElectron) + ak.num(events_trig.ScoutingMuonNoVtx)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.mult_axis, 
                                                dataset, scouting_total_mult, "total_scoutingmult", trigger_path, "mult")
-            if ("total_scoutingpt" in hists_to_process["1d_scalar"]):
+            if ("total_scoutingpt" in self.hists_to_process["1d_scalar"]):
                 scouting_total_pt = ak.sum(events_trig.ScoutingPFJet.pt,axis=1) + ak.sum(events_trig.ScoutingElectron.pt,axis=1) + ak.sum(events_trig.ScoutingMuonNoVtx.pt,axis=1)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                dataset, scouting_total_pt, "total_scoutingpt", trigger_path, "pt")
@@ -451,40 +451,45 @@ class MakeAXOHists (processor.ProcessorABC):
                     axo_score = events_trig.axol1tl.score_v3
                     
                 # 1d score hist
-                if ("anomaly_score" in hists_to_process["1d_scalar"]):
+                if ("anomaly_score" in self.hists_to_process["1d_scalar"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.score_axis, 
                                                    dataset, axo_score, "anomaly_score", trigger_path, "score")
                 
                 # 2d score hists with l1
-                if ("anomaly_score_l1ht" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_l1ht" in self.hists_to_process["2d_scalar"]):
+                    l1_ht = l1_etsums[(events_trig.L1EtSum.etSumType==1) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.ht_axis,
                                                    dataset, dak.flatten(ak.broadcast_arrays(axo_score,l1_ht.pt)[0]), ak.flatten(l1_ht.pt),
                                                    "anomaly_score_l1ht", trigger_path, "score", "ht")
-                if ("anomaly_score_l1met" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_l1met" in self.hists_to_process["2d_scalar"]):
+                    
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.met_axis,
                                                    dataset, dak.flatten(ak.broadcast_arrays(axo_score,l1_met.pt)[0]), ak.flatten(l1_met.pt),
                                                    "anomaly_score_l1met", trigger_path, "score", "met")
-                if ("anomaly_score_total_l1mult" in hists_to_process["2d_scalar"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.met_axis,
+                if ("anomaly_score_total_l1mult" in self.hists_to_process["2d_scalar"]):
+                    l1_total_mult = (ak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
+                                     + ak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
+                                     + ak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.mult_axis,
                                                    dataset, axo_score, l1_total_mult,
                                                    "anomaly_score_total_l1mult", trigger_path, "score", "mult")
-                if ("anomaly_score_total_l1pt" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_total_l1pt" in self.hists_to_process["2d_scalar"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.pt_axis,
                                                    dataset, axo_score, l1_total_pt,
                                                    "anomaly_score_total_l1pt", trigger_path, "score", "pt")
-                if ("anomaly_score_scoutinght" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_scoutinght" in self.hists_to_process["2d_scalar"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.ht_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(axo_score,scouting_ht.pt)[0]), ak.flatten(scouting_ht.pt),
+                                                   dataset, axo_score, scouting_ht,
                                                    "anomaly_score_scoutinght", trigger_path, "score", "ht")
-                if ("anomaly_score_scoutingmet" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_scoutingmet" in self.hists_to_process["2d_scalar"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.met_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(axo_score,scouting_met.pt)[0]), ak.flatten(scouting_met.pt),
+                                                   dataset, axo_score, scouting_met,
                                                    "anomaly_score_scoutingmet", trigger_path, "score", "met")
-                if ("anomaly_score_total_scoutingmult" in hists_to_process["2d_scalar"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.met_axis,
+                if ("anomaly_score_total_scoutingmult" in self.hists_to_process["2d_scalar"]):
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.mult_axis,
                                                    dataset, axo_score, scouting_total_mult,
                                                    "anomaly_score_total_scoutingmult", trigger_path, "score", "mult")
-                if ("anomaly_score_total_scoutingpt" in hists_to_process["2d_scalar"]):
+                if ("anomaly_score_total_scoutingpt" in self.hists_to_process["2d_scalar"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.pt_axis,
                                                    dataset, axo_score, scouting_total_pt,
                                                    "anomaly_score_total_scoutingpt", trigger_path, "score", "pt")
@@ -510,94 +515,94 @@ class MakeAXOHists (processor.ProcessorABC):
                 objs = br[ak.argsort(br.pt, axis=1)]
                 
                 # Fill 1D object histograms - w/trigger
-                if ("n" in hists_to_process["1d_object"]):
+                if ("n" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.mult_axis, 
                                                    dataset, dak.num(br), f'n_{obj}', trigger_path, "mult")
-                if ("pt" in hists_to_process["1d_object"]):
+                if ("pt" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                    dataset, dak.flatten(br.pt), f'pt_{obj}', trigger_path, "pt")
-                if ("pt0" in hists_to_process["1d_object"]):
+                if ("pt0" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                    dataset, dak.flatten(br.pt[:,0:1]), f'pt0_{obj}', trigger_path, "pt")
-                if ("pt1" in hists_to_process["1d_object"]):
+                if ("pt1" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                    dataset, dak.flatten(br.pt[:,1:2]), f'pt1_{obj}', trigger_path, "pt")
-                if ("eta" in hists_to_process["1d_object"]):
+                if ("eta" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.eta_axis, 
                                                    dataset, dak.flatten(br.eta), f'eta_{obj}', trigger_path, "eta")
-                if ("phi" in hists_to_process["1d_object"]):
+                if ("phi" in self.hists_to_process["1d_object"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.phi_axis, 
                                                    dataset, dak.flatten(br.phi), f'phi_{obj}', trigger_path, "phi")
                 
                 diObj = find_diObjs(objs[:,0:2], isL1Obj,isScoutingObj)
                         
                 # Fill 1D diobject histograms - w/trigger
-                if ("m_log" in hists_to_process["1d_diobject"]):
+                if ("m_log" in self.hists_to_process["1d_diobject"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_log, 
                                                    dataset, dak.flatten(diObj.mass), f'm{obj}{obj}_log', trigger_path, "minv_log")
-                if ("m_low" in hists_to_process["1d_diobject"]):
+                if ("m_low" in self.hists_to_process["1d_diobject"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_low, 
                                                    dataset, dak.flatten(diObj.mass), f'm{obj}{obj}_low', trigger_path, "minv_low")
-                if ("m_mid" in hists_to_process["1d_diobject"]):
+                if ("m_mid" in self.hists_to_process["1d_diobject"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_mid, 
                                                    dataset, dak.flatten(diObj.mass), f'm{obj}{obj}_mid', trigger_path, "minv_mid")
-                if ("m" in hists_to_process["1d_diobject"]):
+                if ("m" in self.hists_to_process["1d_diobject"]):
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis, 
                                                    dataset, dak.flatten(diObj.mass), f'm{obj}{obj}', trigger_path, "minv")
                 
                 # Fill 2D histograms - w/trigger
                 if self.has_scores:
-                    if ("anomaly_score_n" in hists_to_process["2d_object"]):
-                        hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.mult_axis
+                    if ("anomaly_score_n" in self.hists_to_process["2d_object"]):
+                        hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.mult_axis,
                                                        dataset, axo_score, dak.num(br),
                                                        f'anomaly_score_n_{obj}', trigger_path, "score", "mult")
-                    if ("anomaly_score_pt" in hists_to_process["2d_object"]):
+                    if ("anomaly_score_pt" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.pt_axis,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.pt)[0]), dak.flatten(br.pt),
                                                        f'anomaly_score_pt_{obj}', trigger_path, "score", "pt")
-                    if ("anomaly_score_eta" in hists_to_process["2d_object"]):
+                    if ("anomaly_score_eta" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.eta_axis,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.eta)[0]), dak.flatten(br.eta),
                                                        f'anomaly_score_eta_{obj}', trigger_path, "score", "eta")
-                    if ("anomaly_score_phi" in hists_to_process["2d_object"]):
+                    if ("anomaly_score_phi" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.phi_axis,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.phi)[0]), dak.flatten(br.phi),
                                                        f'anomaly_score_phi_{obj}', trigger_path, "score", "phi")
-                    if ("anomaly_score_m_log" in hists_to_process["2d_diobject"]):
+                    if ("anomaly_score_m_log" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_log,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_log', trigger_path, "score", "minv_log")
-                    if ("anomaly_score_m_low" in hists_to_process["2d_diobject"]):
+                    if ("anomaly_score_m_low" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_low,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_low', trigger_path, "score", "minv_low")
-                    if ("anomaly_score_m_mid" in hists_to_process["2d_diobject"]):
+                    if ("anomaly_score_m_mid" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_mid,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_mid', trigger_path, "score", "minv_mid")
-                    if ("anomaly_score_m" in hists_to_process["2d_diobject"]):
+                    if ("anomaly_score_m" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis,
                                                        dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}', trigger_path, "score", "minv")
                 
-                if ("eta_phi" in hists_to_process["2d_object"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.eta_axis, self.phi_axis
+                if ("eta_phi" in self.hists_to_process["2d_object"]):
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.eta_axis, self.phi_axis,
                                                    dataset, dak.flatten(br.eta), dak.flatten(br.phi),
                                                    f'eta_phi_{obj}', trigger_path, "eta", "phi")
-                if ("n_eta" in hists_to_process["2d_object"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.eta_axis
+                if ("n_eta" in self.hists_to_process["2d_object"]):
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.eta_axis,
                                                    dataset, dak.flatten(ak.broadcast_arrays(dak.num(br),br.eta)[0]), dak.flatten(br.eta),
                                                    f'n_eta_{obj}', trigger_path, "mult", "eta")
-                if ("n_pt" in hists_to_process["2d_object"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.pt_axis
+                if ("n_pt" in self.hists_to_process["2d_object"]):
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.pt_axis,
                                                    dataset, dak.flatten(ak.broadcast_arrays(dak.num(br),br.pt)[0]), dak.flatten(br.pt),
                                                    f'n_pt_{obj}', trigger_path, "mult", "pt")
-                if ("eta_pt" in hists_to_process["2d_object"]):
-                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.eta_axis, self.pt_axis
+                if ("eta_pt" in self.hists_to_process["2d_object"]):
+                    hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.eta_axis, self.pt_axis,
                                                    dataset, dak.flatten(br.eta), dak.flatten(br.pt),
                                                    f'eta_pt_{obj}', trigger_path, "eta", "pt")
                     
-        if len(hists_to_process["dimuon"])>0:
+        if len(self.hists_to_process["dimuon"])>0:
             # At least two opposite sign muons
             events = events[(ak.num(events.ScoutingMuonNoVtx,axis=1)>=2) & (ak.sum(events.ScoutingMuonNoVtx.charge[:,0:2],axis=1)==0)]
             obj = "ScoutingMuonNoVtx"
@@ -629,16 +634,16 @@ class MakeAXOHists (processor.ProcessorABC):
             objs = br[ak.argsort(br.pt, axis=1)]
             diObj = find_diObjs(objs[:,0:2], isL1Obj,isScoutingObj)
 
-            if ("m_log" in hists_to_process["dimuon"]):
+            if ("m_log" in self.hists_to_process["dimuon"]):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_log, 
                                                dataset, dak.flatten(diObj.mass), 'dimuon_m_log', trigger_path, "minv_log")
-            if ("m_low" in hists_to_process["dimuon"]):
+            if ("m_low" in self.hists_to_process["dimuon"]):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_low, 
                                                dataset, dak.flatten(diObj.mass), 'dimuon_m_low', trigger_path, "minv_low")
-            if ("m_mid" in hists_to_process["dimuon"]):
+            if ("m_mid" in self.hists_to_process["dimuon"]):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis_mid, 
                                                dataset, dak.flatten(diObj.mass), 'dimuon_m_mid', trigger_path, "minv_mid")
-            if ("m" in hists_to_process["dimuon"]):
+            if ("m" in self.hists_to_process["dimuon"]):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis, 
                                                dataset, dak.flatten(diObj.mass), 'dimuon_m', trigger_path, "minv")
                 
@@ -683,7 +688,7 @@ def main():
         MakeAXOHists(trigger_paths=triggers, 
                      hists_to_process=hist_selection,
                      has_scores=has_scores, 
-                     axo_version=axo_v
+                     axo_version=axo_v,
                      is_scouting=is_scouting),
         max_chunks(dataset_runnable, 300000),
         schemaclass=ScoutingNanoAODSchema,
