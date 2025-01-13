@@ -36,14 +36,14 @@ from coffea.dataset_tools import (
 ###################################################################################################
 # PROCESSING OPTIONS
 
-json_filename = "2024_data_filelist.json"
-dataset_name = "Scouting_2024I"
-has_scores = True # whether the files contain axo anomaly score branches
-is_scouting = True # whether the files are scouting nanos
-axo_v = "v4" # which axo version to use for score hists
-n_files = 50 # number of files to process
-coffea_step_size = 50_000 # step size for coffea processor
-coffea_files_per_batch = 1 # files per batch for coffea processor
+json_filename = "2024_data_filelist.json"  # name of json file containing root file paths
+dataset_name = "Scouting_2024I"            # name of key within json containing dataset
+has_scores = True                          # whether the files contain axo anomaly score branches
+is_scouting = True                         # whether the files are scouting nanos
+axo_v = "v4"                               # which axo version to use for score hists
+n_files = 1                                # number of files to process (-1 for all)
+coffea_step_size = 50_000                  # step size for coffea processor
+coffea_files_per_batch = 1                 # files per batch for coffea processor
 
 # which reco objects to process
 reco_objects = [
@@ -114,20 +114,36 @@ hist_selection = {
     ]
 }
 
-# which triggers to save (comment out unwanted)
+# which branches to save (comment out unwanted)
+branch_selection = {
+    "dimuon": [
+        # "dimuon_mass",                            # mass of dimuon pair
+        # "dimuon_pt",                              # pt of dimuon pair
+        # "dimuon_eta",                             # eta of dimuon pair
+        # "dimuon_phi",                             # phi of dimuon pair
+        # "dimuon_pt_1",                            # pt of first muon in dimuon pair
+        # "dimuon_pt_2",                            # pt of second muon in dimuon pair
+        # "dimuon_eta_1",                           # eta of first muon in dimuon pair
+        # "dimuon_eta_2",                           # eta of second muon in dimuon pair
+        # "dimuon_phi_1",                           # phi of first muon in dimuon pair
+        # "dimuon_phi_2",                           # phi of second muon in dimuon pair
+    ]
+}
+
+# which triggers to save (comment out unwanted or add)
 triggers = [
     # 'DST_PFScouting_AXOLoose', 
-    'DST_PFScouting_AXONominal', 
-    'DST_PFScouting_AXOTight', 
+    # 'DST_PFScouting_AXONominal', 
+    # 'DST_PFScouting_AXOTight', 
     # 'DST_PFScouting_AXOVLoose', 
-    'DST_PFScouting_AXOVTight',
+    # 'DST_PFScouting_AXOVTight',
     # 'DST_PFScouting_CICADALoose', 
     # 'DST_PFScouting_CICADAMedium', 
     # 'DST_PFScouting_CICADATight', 
     # 'DST_PFScouting_CICADAVLoose', 
     # 'DST_PFScouting_CICADAVTight',
-    'DST_PFScouting_DoubleMuon',
-    'DST_PFScouting_JetHT',
+    # 'DST_PFScouting_DoubleMuon',
+    # 'DST_PFScouting_JetHT',
     'DST_PFScouting_ZeroBias'
 ]
 
@@ -167,19 +183,19 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
     
     # set up four-vectors based on what kind of object we are dealing with
     if isL1:
-        objs = ak.zip(
+        objs = dak.zip(
             {
                 "pt": events_obj_coll.pt,
                 "eta": events_obj_coll.eta,
                 "phi": events_obj_coll.phi,
-                "mass": ak.zeros_like(events_obj_coll.pt),
+                "mass": dak.zeros_like(events_obj_coll.pt),
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
         )
     elif isScouting:
         try:
-            objs = ak.zip(
+            objs = dak.zip(
                 {
                     "pt": events_obj_coll.pt,
                     "eta": events_obj_coll.eta,
@@ -190,7 +206,7 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
                 behavior=vector.behavior,
             )
         except:
-            objs = ak.zip(
+            objs = dak.zip(
                 {
                     "pt": events_obj_coll.pt,
                     "eta": events_obj_coll.eta,
@@ -201,7 +217,7 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
                 behavior=vector.behavior,
             )
     else:
-        objs = ak.zip({ 
+        objs = dak.zip({ 
             k: getattr(events_obj_coll, k) for k in ["x", "y", "z", "t"] }, 
             with_name="LorentzVector", 
             behavior=events_obj_coll.behavior, 
@@ -209,7 +225,7 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
         
     # get combinations
     diObjs = dak.combinations(objs, 2, fields=["obj1", "obj2"])
-    diObj = ak.zip(
+    diObj = dak.zip(
         {
             "p4": diObjs.obj1+diObjs.obj2,
         },
@@ -274,6 +290,9 @@ class MakeAXOHists (processor.ProcessorABC):
             "2d_diobject": [],
             "dimuon": [],
         },
+        branches_to_save={
+            "dimuon": [],
+        },
         has_scores=True,
         axo_version="v4",
         is_scouting=False, 
@@ -317,6 +336,7 @@ class MakeAXOHists (processor.ProcessorABC):
         self.is_scouting = is_scouting
         self.extra_cut = extra_cut
         self.hists_to_process = hists_to_process
+        self.branches_to_save = branches_to_save
         self.axo_version = axo_version
         
         # define axes for histograms
@@ -362,7 +382,7 @@ class MakeAXOHists (processor.ProcessorABC):
     def process(self, events):
         dataset = events.metadata['dataset']
         cutflow = defaultdict(int)
-        cutflow['start'] = ak.num(events.event, axis=0)
+        cutflow['start'] = dak.num(events.event, axis=0)
         hist_dict = {}
                
         # Saturated-Jets event cut
@@ -399,7 +419,7 @@ class MakeAXOHists (processor.ProcessorABC):
                 trig_path = '_'.join(trigger_path.split('_')[1:])
                 events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger                         
             # save cutflow information
-            cutflow[trigger_path] = ak.num(events_trig.event, axis=0)
+            cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
             
             # get scalar branches (l1 objects)
             if (("l1ht" in self.hists_to_process["1d_scalar"]) or ("l1met" in self.hists_to_process["1d_scalar"])):
@@ -407,27 +427,27 @@ class MakeAXOHists (processor.ProcessorABC):
                 if ("l1ht" in self.hists_to_process["1d_scalar"]):
                     l1_ht = l1_etsums[(events_trig.L1EtSum.etSumType==1) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.ht_axis, 
-                                                   dataset, ak.flatten(l1_ht.pt), "l1ht", trigger_path, "ht")
+                                                   dataset, dak.flatten(l1_ht.pt), "l1ht", trigger_path, "ht")
                 if ("l1met" in self.hists_to_process["1d_scalar"]):
                     l1_met = l1_etsums[(events_trig.L1EtSum.etSumType==2) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.met_axis, 
-                                                   dataset, ak.flatten(l1_met.pt), "l1met", trigger_path, "met")
+                                                   dataset, dak.flatten(l1_met.pt), "l1met", trigger_path, "met")
             if ("total_l1mult" in self.hists_to_process["1d_scalar"]):
-                l1_total_mult = (ak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
-                                 + ak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
-                                 + ak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
+                l1_total_mult = (dak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
+                                 + dak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
+                                 + dak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.mult_axis, 
                                                dataset, l1_total_mult, "total_l1mult", trigger_path, "mult")
             if ("total_l1pt" in self.hists_to_process["1d_scalar"]):
-                l1_total_pt = (ak.sum(events_trig.L1Jet.pt[events_trig.L1Jet.bx == 0],axis=1) 
-                               + ak.sum(events_trig.L1Mu.pt[events_trig.L1Mu.bx == 0],axis=1) 
-                               + ak.sum(events_trig.L1EG.pt[events_trig.L1EG.bx ==0],axis=1))
+                l1_total_pt = (dak.sum(events_trig.L1Jet.pt[events_trig.L1Jet.bx == 0],axis=1) 
+                               + dak.sum(events_trig.L1Mu.pt[events_trig.L1Mu.bx == 0],axis=1) 
+                               + dak.sum(events_trig.L1EG.pt[events_trig.L1EG.bx ==0],axis=1))
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                dataset, l1_total_pt, "total_l1pt", trigger_path, "pt")
                 
             # get scalar branches (scouting objects)
             if ("scoutinght" in self.hists_to_process["1d_scalar"]):
-                scouting_ht = ak.sum(events_trig.ScoutingPFJet.pt,axis=1)
+                scouting_ht = dak.sum(events_trig.ScoutingPFJet.pt,axis=1)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.ht_axis, 
                                                dataset, scouting_ht, "scoutinght", trigger_path, "ht")
             if ("scoutingmet" in self.hists_to_process["1d_scalar"]):
@@ -435,11 +455,11 @@ class MakeAXOHists (processor.ProcessorABC):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.met_axis, 
                                                dataset, scouting_met, "scoutingmet", trigger_path, "met")
             if ("total_scoutingmult" in self.hists_to_process["1d_scalar"]):
-                scouting_total_mult = ak.num(events_trig.ScoutingPFJet) + ak.num(events_trig.ScoutingElectron) + ak.num(events_trig.ScoutingMuonNoVtx)
+                scouting_total_mult = dak.num(events_trig.ScoutingPFJet) + dak.num(events_trig.ScoutingElectron) + dak.num(events_trig.ScoutingMuonNoVtx)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.mult_axis, 
                                                dataset, scouting_total_mult, "total_scoutingmult", trigger_path, "mult")
             if ("total_scoutingpt" in self.hists_to_process["1d_scalar"]):
-                scouting_total_pt = ak.sum(events_trig.ScoutingPFJet.pt,axis=1) + ak.sum(events_trig.ScoutingElectron.pt,axis=1) + ak.sum(events_trig.ScoutingMuonNoVtx.pt,axis=1)
+                scouting_total_pt = dak.sum(events_trig.ScoutingPFJet.pt,axis=1) + dak.sum(events_trig.ScoutingElectron.pt,axis=1) + dak.sum(events_trig.ScoutingMuonNoVtx.pt,axis=1)
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.pt_axis, 
                                                dataset, scouting_total_pt, "total_scoutingpt", trigger_path, "pt")
             
@@ -457,19 +477,21 @@ class MakeAXOHists (processor.ProcessorABC):
                 
                 # 2d score hists with l1
                 if ("anomaly_score_l1ht" in self.hists_to_process["2d_scalar"]):
+                    l1_etsums = events_trig.L1EtSum
                     l1_ht = l1_etsums[(events_trig.L1EtSum.etSumType==1) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.ht_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(axo_score,l1_ht.pt)[0]), ak.flatten(l1_ht.pt),
+                                                   dataset, dak.flatten(dak.broadcast_arrays(axo_score,l1_ht.pt)[0]), dak.flatten(l1_ht.pt),
                                                    "anomaly_score_l1ht", trigger_path, "score", "ht")
                 if ("anomaly_score_l1met" in self.hists_to_process["2d_scalar"]):
-                    
+                    l1_etsums = events_trig.L1EtSum
+                    l1_met = l1_etsums[(events_trig.L1EtSum.etSumType==2) & (events_trig.L1EtSum.bx==0)]
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.met_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(axo_score,l1_met.pt)[0]), ak.flatten(l1_met.pt),
+                                                   dataset, dak.flatten(dak.broadcast_arrays(axo_score,l1_met.pt)[0]), dak.flatten(l1_met.pt),
                                                    "anomaly_score_l1met", trigger_path, "score", "met")
                 if ("anomaly_score_total_l1mult" in self.hists_to_process["2d_scalar"]):
-                    l1_total_mult = (ak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
-                                     + ak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
-                                     + ak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
+                    l1_total_mult = (dak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
+                                     + dak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
+                                     + dak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.mult_axis,
                                                    dataset, axo_score, l1_total_mult,
                                                    "anomaly_score_total_l1mult", trigger_path, "score", "mult")
@@ -512,7 +534,7 @@ class MakeAXOHists (processor.ProcessorABC):
                     br = br[mask]
 
                 # Build di-object candidate
-                objs = br[ak.argsort(br.pt, axis=1)]
+                objs = br[dak.argsort(br.pt, axis=1)]
                 
                 # Fill 1D object histograms - w/trigger
                 if ("n" in self.hists_to_process["1d_object"]):
@@ -558,31 +580,31 @@ class MakeAXOHists (processor.ProcessorABC):
                                                        f'anomaly_score_n_{obj}', trigger_path, "score", "mult")
                     if ("anomaly_score_pt" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.pt_axis,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.pt)[0]), dak.flatten(br.pt),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,br.pt)[0]), dak.flatten(br.pt),
                                                        f'anomaly_score_pt_{obj}', trigger_path, "score", "pt")
                     if ("anomaly_score_eta" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.eta_axis,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.eta)[0]), dak.flatten(br.eta),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,br.eta)[0]), dak.flatten(br.eta),
                                                        f'anomaly_score_eta_{obj}', trigger_path, "score", "eta")
                     if ("anomaly_score_phi" in self.hists_to_process["2d_object"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.phi_axis,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,br.phi)[0]), dak.flatten(br.phi),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,br.phi)[0]), dak.flatten(br.phi),
                                                        f'anomaly_score_phi_{obj}', trigger_path, "score", "phi")
                     if ("anomaly_score_m_log" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_log,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_log', trigger_path, "score", "minv_log")
                     if ("anomaly_score_m_low" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_low,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_low', trigger_path, "score", "minv_low")
                     if ("anomaly_score_m_mid" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis_mid,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}_mid', trigger_path, "score", "minv_mid")
                     if ("anomaly_score_m" in self.hists_to_process["2d_diobject"]):
                         hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.score_axis, self.minv_axis,
-                                                       dataset, dak.flatten(ak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
+                                                       dataset, dak.flatten(dak.broadcast_arrays(axo_score,diObj.mass)[0]), dak.flatten(diObj.mass),
                                                        f'anomaly_score_m{obj}{obj}', trigger_path, "score", "minv")
                 
                 if ("eta_phi" in self.hists_to_process["2d_object"]):
@@ -591,20 +613,22 @@ class MakeAXOHists (processor.ProcessorABC):
                                                    f'eta_phi_{obj}', trigger_path, "eta", "phi")
                 if ("n_eta" in self.hists_to_process["2d_object"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.eta_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(dak.num(br),br.eta)[0]), dak.flatten(br.eta),
+                                                   dataset, dak.flatten(dak.broadcast_arrays(dak.num(br),br.eta)[0]), dak.flatten(br.eta),
                                                    f'n_eta_{obj}', trigger_path, "mult", "eta")
                 if ("n_pt" in self.hists_to_process["2d_object"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.mult_axis, self.pt_axis,
-                                                   dataset, dak.flatten(ak.broadcast_arrays(dak.num(br),br.pt)[0]), dak.flatten(br.pt),
+                                                   dataset, dak.flatten(dak.broadcast_arrays(dak.num(br),br.pt)[0]), dak.flatten(br.pt),
                                                    f'n_pt_{obj}', trigger_path, "mult", "pt")
                 if ("eta_pt" in self.hists_to_process["2d_object"]):
                     hist_dict = storeHistToDict_2d(hist_dict, self.dataset_axis, self.eta_axis, self.pt_axis,
                                                    dataset, dak.flatten(br.eta), dak.flatten(br.pt),
                                                    f'eta_pt_{obj}', trigger_path, "eta", "pt")
                     
+        return_dict = {}
+                    
         if len(self.hists_to_process["dimuon"])>0:
             # At least two opposite sign muons
-            events = events[(ak.num(events.ScoutingMuonNoVtx,axis=1)>=2) & (ak.sum(events.ScoutingMuonNoVtx.charge[:,0:2],axis=1)==0)]
+            events = events[(dak.num(events.ScoutingMuonNoVtx,axis=1)>=2) & (dak.sum(events.ScoutingMuonNoVtx.charge[:,0:2],axis=1)==0)]
             obj = "ScoutingMuonNoVtx"
             obj_dict = self.run_dict['objects'][obj]
 
@@ -617,7 +641,7 @@ class MakeAXOHists (processor.ProcessorABC):
                 trig_br = getattr(events,trigger_path.split('_')[0])
                 trig_path = '_'.join(trigger_path.split('_')[1:])
                 events_trig = events[getattr(trig_br,trig_path)] # select events passing this trigger
-            cutflow["dimuon"+trigger_path] = ak.num(events_trig.event, axis=0)
+            cutflow["dimuon"+trigger_path] = dak.num(events_trig.event, axis=0)
 
             cut_list = obj_dict['cut']
             label = obj_dict['label']
@@ -631,7 +655,7 @@ class MakeAXOHists (processor.ProcessorABC):
                 br = br[mask]        
 
             # Build di-object candidate
-            objs = br[ak.argsort(br.pt, axis=1)]
+            objs = br[dak.argsort(br.pt, axis=1)]
             diObj = find_diObjs(objs[:,0:2], isL1Obj,isScoutingObj)
 
             if ("m_log" in self.hists_to_process["dimuon"]):
@@ -647,11 +671,33 @@ class MakeAXOHists (processor.ProcessorABC):
                 hist_dict = storeHistToDict_1d(hist_dict, self.dataset_axis, self.minv_axis, 
                                                dataset, dak.flatten(diObj.mass), 'dimuon_m', trigger_path, "minv")
                 
-        return {
-            'cutflow' : cutflow,
-            'hists'   : hist_dict,
-            'trigger' : self.trigger_paths if len(self.trigger_paths)>0 else None
-        }
+            # save branches if enabled
+            if "dimuon_mass" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_mass_{trigger_path}"] = dak.flatten(diObj.mass)
+            if "dimuon_pt" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_pt_{trigger_path}"] = dak.flatten(diObj.pt)
+            if "dimuon_eta" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_eta_{trigger_path}"] = dak.flatten(diObj.eta)
+            if "dimuon_phi" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_phi_{trigger_path}"] = dak.flatten(diObj.phi)
+            if "dimuon_pt_1" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_pt_1_{trigger_path}"] = dak.flatten(diObj.pt_1)
+            if "dimuon_pt_2" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_pt_2_{trigger_path}"] = dak.flatten(diObj.pt_2)
+            if "dimuon_eta_1" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_eta_1_{trigger_path}"] = dak.flatten(diObj.eta_1)
+            if "dimuon_eta_2" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_eta_2_{trigger_path}"] = dak.flatten(diObj.eta_2)
+            if "dimuon_phi_1" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_phi_1_{trigger_path}"] = dak.flatten(diObj.phi_1)
+            if "dimuon_phi_2" in self.branches_to_save["dimuon"]: 
+                return_dict[f"dimuon_phi_2_{trigger_path}"] = dak.flatten(diObj.phi_2)
+                
+        return_dict['cutflow'] = cutflow
+        return_dict['hists'] = hist_dict
+        return_dict['trigger'] = self.trigger_paths if len(self.trigger_paths)>0 else None
+                
+        return return_dict
 
     def postprocess(self, accumulator):
         return accumulator
@@ -660,8 +706,7 @@ class MakeAXOHists (processor.ProcessorABC):
 ###################################################################################################
 # DEFINE MAIN FUNCTION
 def main():
-    json_filename = "2024_data_filelist.json"
-    dataset_name = "Scouting_2024I"
+    client = Client("tls://localhost:8786")
     
     with open(json_filename) as json_file:
         dataset = json.load(json_file)
@@ -669,9 +714,11 @@ def main():
     dataset_skimmed = {dataset_name: {'files': {}}}
     i = 0
     for key, value in dataset[dataset_name]['files'].items():
-        if (i<n_files):
+        if ((i<n_files) or (n_files==-1)):
             dataset_skimmed[dataset_name]['files'][key] = value
         i+=1
+        
+    print(f"Processing {i} files")
         
     dataset_runnable, dataset_updated = preprocess(
         dataset_skimmed,
@@ -687,6 +734,7 @@ def main():
     to_compute = apply_to_fileset(
         MakeAXOHists(trigger_paths=triggers, 
                      hists_to_process=hist_selection,
+                     branches_to_save=branch_selection,
                      has_scores=has_scores, 
                      axo_version=axo_v,
                      is_scouting=is_scouting),
@@ -700,9 +748,9 @@ def main():
     hist_result = hist_result[0]
 
     #Save file 
-    with open(f'hist_result_{dataset_name}_{n_files}files.pkl', 'wb') as file:
-            # dump information to that file
-            dill.dump(hist_result, file)
+    # with open(f'hist_result_{dataset_name}_{n_files}files.pkl', 'wb') as file:
+    #         # dump information to that file
+    #         dill.dump(hist_result, file)
     
 
 ###################################################################################################
