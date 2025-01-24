@@ -1431,9 +1431,10 @@ class MakeAXOHists (processor.ProcessorABC):
                     branch_save_dict[f"dimuon_phi_1_{trigger_path}"] = dak.flatten(diObj.obj1_phi)
                 if "dimuon_phi_2" in self.branches_to_save["dimuon"]: 
                     branch_save_dict[f"dimuon_phi_2_{trigger_path}"] = dak.flatten(diObj.obj2_phi)
-                    
-            dak_zip = dak.zip(branch_save_dict)
-            dak_zip.persist().to_parquet("branches")
+                   
+            if len(self.branches_to_save["dimuon"])>0:
+                dak_zip = dak.zip(branch_save_dict)
+                dak_zip.persist().to_parquet("branches")
             
         return_dict = {}
         return_dict['cutflow'] = cutflow
