@@ -9,6 +9,16 @@ following the [git instructions](https://coffea-casa.readthedocs.io/en/latest/cc
 If you choose not to use coffea-casa, be aware that any xrootd file URLs in the notebooks will need to have their file redirector changed from
 `root://xcache/` to `root://cmsxrootd.fnal.gov/` or another.
 
+Make sure you are using the *Alma 8, coffea 2024* image. 
 
-## Using the Tools
-Nothing to document really, use `axo_histos.ipynb` to plot histograms for AXOL1TL datasets!
+## Running the code
+
+`config.yaml` contains the configuration file for the dataset and options you want to run with.
+
+To run the processor, within the coffea terminal run: 
+```
+python3 axo_main.py
+```
+This will process the files and save the output histograms for you. 
+
+To plot the histograms you have created, take a look a `axo_plotting.ipynb`.
