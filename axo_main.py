@@ -38,89 +38,130 @@ from coffea.dataset_tools import (
 from ScoutingNanoAODSchema import ScoutingNanoAODSchema
 NanoAODSchema.warn_missing_crossrefs = False
 
-
-###################################################################################################
-# PROCESSING OPTIONS
-
-# json_filename = "2024_data_filelist.json"  # name of json file containing root file paths
-# dataset_name = "Scouting_2024I"            # name of key within json containing dataset
-# has_scores = True                          # whether the files contain axo anomaly score branches
-# is_scouting = True                         # whether the files are scouting nanos
-# axo_v = "v4"                               # which axo version to use for score hists
-# n_files = 1                                # number of files to process (-1 for all)
-# coffea_step_size = 200_000                  # step size for coffea processor
-# coffea_files_per_batch = 1                 # files per batch for coffea processor
-# visualize = False                        # save task graph as pdf (only use when processing 1 or 2 files)
-# save_hists = True                        # save histograms using pickle
-# do_preprocess = True                      # create a preprocessing json file 
-# # which reco objects to process
-# reco_objects = [
-#     "ScoutingPFJet",
-#     "ScoutingElectron",
-#     "ScoutingMuonNoVtx",
-#     "ScoutingPhoton"
-# ] 
-# # which l1 objects to process
-# l1_objects = [
-#     "L1Jet"
-# ] 
-
-# # which hists to save (comment out unwanted)
 hist_selection = {
     "1d_scalar": [
-        "anomaly_score",                       # axol1tl anomaly score
-        "l1ht",                               # ht of l1 objects
-        "l1met",                              # MET of l1 objects
-        "total_l1mult",                       # total l1 object multiplicity
-        "total_l1pt",                         # total l1 pt
-        "scoutinght",                         # ht of scouting objects
-        "scoutingmet",                        # MET of scouting objects
-        "total_scoutingmult",                 # total scouting object multiplicity
-        "total_scoutingpt",                   # total scouting pt
+        # "anomaly_score",                       # axol1tl anomaly score
+        # "l1ht",                               # ht of l1 objects
+        # "l1met",                              # MET of l1 objects
+        # "total_l1mult",                       # total l1 object multiplicity
+        # "total_l1pt",                         # total l1 pt
+        # "scoutinght",                         # ht of scouting objects
+        # "scoutingmet",                        # MET of scouting objects
+        # "total_scoutingmult",                 # total scouting object multiplicity
+        # "total_scoutingpt",                   # total scouting pt
     ],
     "2d_scalar": [
-        "anomaly_score_l1ht",               
-        "anomaly_score_l1met",             
-        "anomaly_score_total_l1mult",         
-        "anomaly_score_total_l1pt",
-        "anomaly_score_scoutinght",
-        "anomaly_score_scoutingmet",
-        "anomaly_score_total_scoutingmult",   
-        "anomaly_score_total_scoutingpt",
+        # "anomaly_score_l1ht",               
+        # "anomaly_score_l1met",             
+        # "anomaly_score_total_l1mult",         
+        # "anomaly_score_total_l1pt",
+        # "anomaly_score_scoutinght",
+        # "anomaly_score_scoutingmet",
+        # "anomaly_score_total_scoutingmult",   
+        # "anomaly_score_total_scoutingpt",
     ],
     "1d_object": [
-        "n",                                   # object multiplicity
-        "pt",                                  # object pt
-        "pt0",                                 # leading object pt
-        "pt1",                                 # subleading object pt
-        "eta",                                 # object eta
-        "phi",                                 # object phi
+        "n"                                   # object multiplicity
+        # "pt",                                  # object pt
+        # "pt0",                                 # leading object pt
+        # "pt1",                                 # subleading object pt
+        # "eta",                                 # object eta
+        # "phi",                                 # object phi
     ],
     "2d_object": [
-        "anomaly_score_n",
-        "anomaly_score_pt",
-        "anomaly_score_eta",
-        "anomaly_score_phi",
+        # "anomaly_score_n",
+        # "anomaly_score_pt",
+        # "anomaly_score_eta",
+        # "anomaly_score_phi",
     ],
     "1d_diobject": [ 
-        "m_log",                               # log axis for diobject invariant mass
-        "m_low",                               # low range axis for diobject invariant mass
-        "m_mid",                               # mid range axis for diobject invariant mass
-        "m",                                   # full range axis for diobject invariant mass
+        # "m_log",                               # log axis for diobject invariant mass
+        # "m_low",                               # low range axis for diobject invariant mass
+        # "m_mid",                               # mid range axis for diobject invariant mass
+        # "m",                                   # full range axis for diobject invariant mass
     ],
     "2d_diobject": [
-        "anomaly_score_m_log",
-        "anomaly_score_m_low",
-        "anomaly_score_m_mid",
-        "anomaly_score_m",
+        # "anomaly_score_m_log",
+        # "anomaly_score_m_low",
+        # "anomaly_score_m_mid",
+        # "anomaly_score_m",
     ],
     "dimuon": [
-        "m_log",                               # log axis for dimuon invariant mass
-        "m_low",                               # low range axis for dimuon invariant mass
-        "m_mid",                               # mid range axis for dimuon invariant mass
-        "m",                                   # full range axis for dimuon invariant mass
+        # "m_log",                               # log axis for dimuon invariant mass
+        # "m_low",                               # low range axis for dimuon invariant mass
+        # "m_mid",                               # mid range axis for dimuon invariant mass
+        # "m",                                   # full range axis for dimuon invariant mass
     ]
 }
+
+# which branches to save (comment out unwanted)
+branch_selection = {
+    "dimuon": [
+        # "dimuon_mass",                            # mass of dimuon pair
+        # "dimuon_pt",                              # pt of dimuon pair
+        # "dimuon_eta",                             # eta of dimuon pair
+        # "dimuon_phi",                             # phi of dimuon pair
+        # "dimuon_pt_1",                            # pt of first muon in dimuon pair
+        # "dimuon_pt_2",                            # pt of second muon in dimuon pair
+        # "dimuon_eta_1",                           # eta of first muon in dimuon pair
+        # "dimuon_eta_2",                           # eta of second muon in dimuon pair
+        # "dimuon_phi_1",                           # phi of first muon in dimuon pair
+        # "dimuon_phi_2",                           # phi of second muon in dimuon pair
+    ]
+}
+
+
+# # # which hists to save (comment out unwanted)
+# hist_selection = {
+#     "1d_scalar": {
+#         "anomaly_score": self.score_axis,                # axol1tl anomaly score
+#         "ht":self.ht_axis,                               # ht of objects
+#         "met":self.met_axis,                             # MET of objects
+#         "total_mult":self.mult_axis,                     # total object multiplicity
+#         "total_pt":self.pt_axis,                         # total pt
+#     },
+#     "1d_per_object_type": {
+#         "n":self.mult_axis,                               # object multiplicity
+#         "pt":self.pt_axis,                                 # object pt
+#         "eta":self.eta_axis,                              # object eta
+#         "phi":self.phi_axis,                              # object phi
+#     },
+#     "1d_per_object": {
+#         "pt":self.pt_axis,                                  # object pt
+#         "eta":self.eta_axis,                                 # object eta
+#         "phi":self.phi_axis,                                 # object phi
+#     },
+#     "2d_scalar": {
+#         "anomaly_score_ht":(self.score_axis, self.ht_axis),               
+#         "anomaly_score_met":(self.score_axis, self.met_axis),             
+#         "anomaly_score_total_mult":(self.score_axis, self.mult_axis),         
+#         "anomaly_score_total_pt":(self.score_axis, self.pt_axis)
+#     },
+#     "2d_per_object_type": {
+#         "anomaly_score_n":(self.score_axis,self.mult_axis),
+#         "anomaly_score_pt":(self.score_axis,self.pt_axis),
+#         "anomaly_score_eta":(self.score_axis,self.eta_axis),
+#         "anomaly_score_phi":(self.score_axis,self.phi_axis),
+#     },
+#     "1d_diobject": { 
+#         "m_log",                               # log axis for diobject invariant mass
+#         "m_low",                               # low range axis for diobject invariant mass
+#         "m_mid",                               # mid range axis for diobject invariant mass
+#         "m",                                   # full range axis for diobject invariant mass
+#     },
+#     "2d_diobject": {
+#         "anomaly_score_m_log",
+#         "anomaly_score_m_low",
+#         "anomaly_score_m_mid",
+#         "anomaly_score_m",
+#     },
+#     "dimuon": {
+#         "m_log",                               # log axis for dimuon invariant mass
+#         "m_low",                               # low range axis for dimuon invariant mass
+#         "m_mid",                               # mid range axis for dimuon invariant mass
+#         "m",                                   # full range axis for dimuon invariant mass
+#     }
+# }
 
 # which branches to save (comment out unwanted)
 branch_selection = {
@@ -406,11 +447,7 @@ class MakeAXOHists (processor.ProcessorABC):
         cutflow['start'] = dak.num(events.event, axis=0)
         hist_dict = {}
                
-        # Saturated-Jets event cut
-        events = events[dak.all(events.L1Jet.pt<1000,axis=1)]
-        # Saturated-MET event cut
-        events = events[dak.flatten(events.L1EtSum.pt[(events.L1EtSum.etSumType==2) 
-                                                      & (events.L1EtSum.bx==0)])<1040]
+
         
         print("Available fields:", events.fields)
         
@@ -1441,6 +1478,7 @@ def main():
         config = yaml.safe_load(stream)
         
     globals().update(config)
+
        
     with open(json_filename) as json_file:
         dataset = json.load(json_file)
@@ -1474,33 +1512,34 @@ def main():
             dataset_runnable, dataset_updated = json.load(f)
     
 
-    tstart = time.time()
+#     tstart = time.time()
     
-    to_compute = apply_to_fileset(
-        MakeAXOHists(trigger_paths=triggers, 
-                     hists_to_process=hist_selection,
-                     branches_to_save=branch_selection,
-                     has_scores=has_scores, 
-                     axo_version=axo_v,
-                     is_scouting=is_scouting),
-        max_chunks(dataset_runnable, coffea_max_chunks),
-        schemaclass=ScoutingNanoAODSchema,
-        uproot_options={"allow_read_errors_with_report": (OSError, TypeError, KeyError)}
-    )
+#     to_compute = apply_to_fileset(
+#         MakeAXOHists(trigger_paths=triggers, 
+#                      hists_to_process=hist_selection,
+#                      branches_to_save=branch_selection,
+#                      has_scores=has_scores, 
+#                      axo_version=axo_v,
+#                      is_scouting=is_scouting),
+#         max_chunks(dataset_runnable, coffea_max_chunks),
+#         schemaclass=ScoutingNanoAODSchema,
+#         uproot_options={"allow_read_errors_with_report": (OSError, TypeError, KeyError)}
+#     )
     
-    if visualize_task_graph:
-        dask.optimize(to_compute)
-        dask.visualize(to_compute, filename=f"dask_coffea_graph_{todaysDate}", format="pdf")
+#     if visualize_task_graph:
+#         dask.optimize(to_compute)
+#         dask.visualize(to_compute, filename=f"dask_coffea_graph_{todaysDate}", format="pdf")
 
-    (hist_result,) = dask.compute(to_compute)
-    print(f'{time.time()-tstart:.1f}s to process')
-    hist_result = hist_result[0]
+#     (hist_result,) = dask.compute(to_compute)
+#     print(f'{time.time()-tstart:.1f}s to process')
+#     hist_result = hist_result[0]
 
-    #Save file 
-    if save_hists:
-        with open(f'hist_result_{dataset_name}_{todaysDate}.pkl', 'wb') as file:
-                # dump information to that file
-                dill.dump(hist_result, file)
+#     #Save file 
+#     if save_hists:
+#         with open(f'hist_result_{dataset_name}_{todaysDate}.pkl', 'wb') as file:
+#                 # dump information to that file
+#                 dill.dump(hist_result, file)
+    print("Finished")
     
 ###################################################################################################
 # RUN SCRIPT

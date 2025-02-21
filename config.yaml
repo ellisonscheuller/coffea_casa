@@ -13,25 +13,26 @@ coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
 visualize_task_graph: False                        # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                        # save histograms using pickle
-do_preprocess: True                      # create a preprocessing json file 
+do_preprocess: True                    # create a preprocessing json file 
 
 # Object configurations ----------------------------------
-# Which reconstructed objects to process
-reco_objects: 
+# Which objects to process
+objects: 
+    # Scouting objects
     - "ScoutingPFJet"
     - "ScoutingElectron"
     - "ScoutingMuonNoVtx"
     - "ScoutingMuonVtx"
     - "ScoutingPhoton"
+    # L1 objects 
+    - "L1Jet"
+    - "L1EGamma"
+    - "L1Mu"
+    # Full Reco objects
     # - "Jet"
     # - "Electron"
     # - "Muon"
  
-# Which L1 objects to process
-l1_objects:
-    - "L1Jet"
-    - "L1EGamma"
-    - "L1Mu"
 
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
@@ -75,7 +76,15 @@ object_cleaning:
     "L1Mu":
         pt: 0.1 # GeV
         eta: 2.4 # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
-
+    "Jet":
+        pt: 30.0 # GeV
+        eta: 10
+    "Muon":
+        pt: 3.0 # GeV
+        eta: 10 
+    "Electron":
+        pt: 5.0 # GeV
+        eta: 10 
 
 # # Object labeling dictionary -------------------------------------------
 # object_label:
@@ -88,7 +97,15 @@ object_cleaning:
 #     "L1EGamma": "EG"
 #     "L1Mu": ""L1\mu""
 
-
-
+# AXOL1TL Thresholds -------------------------------------------
+axo_thresholds:
+    v3:
+        'AXOVTight'  : 25000/16
+        'AXOTight'   : 20486/16
+        'AXONominal' : 18580/16
+        'AXOLoose'   : 17596/16
+        'AXOVLoose'  : 15717/16
+    v4:
+    v5:
 
 
