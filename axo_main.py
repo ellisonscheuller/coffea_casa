@@ -38,114 +38,8 @@ from coffea.dataset_tools import (
 from ScoutingNanoAODSchema import ScoutingNanoAODSchema
 NanoAODSchema.warn_missing_crossrefs = False
 
-hist_selection = {
-    "1d_scalar": [
-        # "anomaly_score",                       # axol1tl anomaly score
-        # "l1ht",                               # ht of l1 objects
-        # "l1met",                              # MET of l1 objects
-        # "total_l1mult",                       # total l1 object multiplicity
-        # "total_l1pt",                         # total l1 pt
-        # "scoutinght",                         # ht of scouting objects
-        # "scoutingmet",                        # MET of scouting objects
-        # "total_scoutingmult",                 # total scouting object multiplicity
-        # "total_scoutingpt",                   # total scouting pt
-    ],
-    "2d_scalar": [
-        # "anomaly_score_l1ht",               
-        # "anomaly_score_l1met",             
-        # "anomaly_score_total_l1mult",         
-        # "anomaly_score_total_l1pt",
-        # "anomaly_score_scoutinght",
-        # "anomaly_score_scoutingmet",
-        # "anomaly_score_total_scoutingmult",   
-        # "anomaly_score_total_scoutingpt",
-    ],
-    "1d_object": [
-        "n"                                   # object multiplicity
-        # "pt",                                  # object pt
-        # "pt0",                                 # leading object pt
-        # "pt1",                                 # subleading object pt
-        # "eta",                                 # object eta
-        # "phi",                                 # object phi
-    ],
-    "2d_object": [
-        # "anomaly_score_n",
-        # "anomaly_score_pt",
-        # "anomaly_score_eta",
-        # "anomaly_score_phi",
-    ],
-    "1d_diobject": [ 
-        # "m_log",                               # log axis for diobject invariant mass
-        # "m_low",                               # low range axis for diobject invariant mass
-        # "m_mid",                               # mid range axis for diobject invariant mass
-        # "m",                                   # full range axis for diobject invariant mass
-    ],
-    "2d_diobject": [
-        # "anomaly_score_m_log",
-        # "anomaly_score_m_low",
-        # "anomaly_score_m_mid",
-        # "anomaly_score_m",
-    ],
-    "dimuon": [
-        # "m_log",                               # log axis for dimuon invariant mass
-        # "m_low",                               # low range axis for dimuon invariant mass
-        # "m_mid",                               # mid range axis for dimuon invariant mass
-        # "m",                                   # full range axis for dimuon invariant mass
-    ]
-}
 
 
-# # # which hists to save (comment out unwanted)
-# hist_selection = {
-#     "1d_scalar": {
-#         "anomaly_score": self.score_axis,                # axol1tl anomaly score
-#         "ht":self.ht_axis,                               # ht of objects
-#         "met":self.met_axis,                             # MET of objects
-#         "total_mult":self.mult_axis,                     # total object multiplicity
-#         "total_pt":self.pt_axis,                         # total pt
-#     },
-#     "1d_per_object_type": {
-#         "n":self.mult_axis,                               # object multiplicity
-#         "pt":self.pt_axis,                                 # object pt
-#         "eta":self.eta_axis,                              # object eta
-#         "phi":self.phi_axis,                              # object phi
-#     },
-#     "1d_per_object": {
-#         "pt":self.pt_axis,                                  # object pt
-#         "eta":self.eta_axis,                                 # object eta
-#         "phi":self.phi_axis,                                 # object phi
-#     },
-#     "2d_scalar": {
-#         "anomaly_score_ht":(self.score_axis, self.ht_axis),               
-#         "anomaly_score_met":(self.score_axis, self.met_axis),             
-#         "anomaly_score_total_mult":(self.score_axis, self.mult_axis),         
-#         "anomaly_score_total_pt":(self.score_axis, self.pt_axis)
-#     },
-#     "2d_per_object_type": {
-#         "anomaly_score_n":(self.score_axis,self.mult_axis),
-#         "anomaly_score_pt":(self.score_axis,self.pt_axis),
-#         "anomaly_score_eta":(self.score_axis,self.eta_axis),
-#         "anomaly_score_phi":(self.score_axis,self.phi_axis),
-#     },
-#     "1d_diobject": { 
-#         "m_log",                               # log axis for diobject invariant mass
-#         "m_low",                               # low range axis for diobject invariant mass
-#         "m_mid",                               # mid range axis for diobject invariant mass
-#         "m",                                   # full range axis for diobject invariant mass
-#     },
-#     "2d_diobject": {
-#         "anomaly_score_m_log",
-#         "anomaly_score_m_low",
-#         "anomaly_score_m_mid",
-#         "anomaly_score_m",
-#     },
-#     "dimuon": {
-#         "m_log",                               # log axis for dimuon invariant mass
-#         "m_low",                               # low range axis for dimuon invariant mass
-#         "m_mid",                               # mid range axis for dimuon invariant mass
-#         "m",                                   # full range axis for dimuon invariant mass
-#     }
-# }
 
 # ###################################################################################################
 # # HELPER FUNCTIONS FOR PROCESSOR
@@ -332,7 +226,7 @@ def process_histograms(dataset_runnable, config):
         MakeAXOHists(
             trigger_paths=config["triggers"],
             objects=config["objects"],
-            hists_to_process=hist_selection,
+            #hists_to_process=hist_selection,
             branches_to_save=config["branch_selection"],
             has_scores=config["has_scores"], 
             axo_version=config["axo_version"],
@@ -423,7 +317,7 @@ def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
 def get_per_object_type_hist_values(objects, histogram):
     """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
     level_map = {
-        "ht": lambda: dak.flatten(objects.pt),
+        "ht": lambda: dak.sum(objects.pt,axis=1),
         "mult": lambda: dak.num(objects),
         "pt": lambda:  dak.flatten(objects.pt),
         "eta": lambda:  dak.flatten(objects.eta),
@@ -572,15 +466,15 @@ class MakeAXOHists (processor.ProcessorABC):
         self, 
         trigger_paths=[],
         objects=[],
-        hists_to_process={
-            "1d_scalar": [],
-            "2d_scalar": [],
-            "1d_object": [],
-            "2d_object": [],
-            "1d_diobject": [],
-            "2d_diobject": [],
-            "dimuon": [],
-        },
+        # hists_to_process={
+        #     "1d_scalar": [],
+        #     "2d_scalar": [],
+        #     "1d_object": [],
+        #     "2d_object": [],
+        #     "1d_diobject": [],
+        #     "2d_diobject": [],
+        #     "dimuon": [],
+        # },
         branches_to_save={
             "dimuon": [],
         },
@@ -591,33 +485,11 @@ class MakeAXOHists (processor.ProcessorABC):
         config=None
     ):
 
-        # the_object_dict =  {'ScoutingPFJet' :      {'cut' : [('pt', 30.)], 'label' : 'j'},
-        #                     'ScoutingElectron' : {'cut' : [('pt', 10)], 'label' : 'e'},
-        #                     'ScoutingMuonNoVtx' :     {'cut' : [('pt', 3)], 'label' : '\mu'},
-        #                     'ScoutingPhoton' :     {'cut' : [('pt', 10)], 'label' : '\gamma'},
-        #                     'L1Jet' :    {'cut' : [('pt', 0.1)], 'label' : 'L1j'},
-        #                     'L1EG' :     {'cut' : [('pt', 0.1)], 'label' : 'L1e'},
-        #                     'L1Mu' :     {'cut' : [('pt', 0.1)], 'label' : 'L1\mu'}
-        #                    }
-    
-        # self.run_dict = {
-        #     'thresholds' : thresholds if thresholds is not None else {
-        #         'AXOVTight_EMU'  : {'name'  : 'AXO VTight', 'score' : 25000/16},
-        #         'AXOTight_EMU'   : {'name'  : 'AXO Tight', 'score' : 20486/16},
-        #         'AXONominal_EMU' : {'name'  : 'AXO Nominal', 'score' : 18580/16},
-        #         'AXOLoose_EMU'   : {'name'  : 'AXO Loose', 'score' : 17596/16},
-        #         'AXOVLoose_EMU'  : {'name'  : 'AXO VLoose', 'score' : 15717/16},
-        #     },
-        #     'objects' : object_dict if object_dict is not None else the_object_dict
-        # }
 
-        # self.sorted_keys = sorted(
-        #     self.run_dict['thresholds'],key=lambda i: self.run_dict['thresholds'][i]['score']
-        # )
         self.trigger_paths = trigger_paths
         self.objects = objects
         self.has_scores = has_scores
-        self.hists_to_process = hists_to_process
+        #self.hists_to_process = hists_to_process
         self.branches_to_save = branches_to_save
         self.axo_version = axo_version
         self.config = config
@@ -635,7 +507,7 @@ class MakeAXOHists (processor.ProcessorABC):
         )
         # Regular axes
         self.score_axis = hist.axis.Regular(
-            100, 0, 4000, name="anomaly_score", label='Anomaly Score'
+            600, 0, 600, name="anomaly_score", label='Anomaly Score'
         )
         self.mult_axis = hist.axis.Regular(
             200, 0, 201, name="mult", label=r'$N_{obj}$'
@@ -653,7 +525,7 @@ class MakeAXOHists (processor.ProcessorABC):
             250, 0, 2500, name="met", label=r"$p^{miss}_{T} [GeV]$"
         )
         self.ht_axis = hist.axis.Regular(
-            100, 0, 2000, name="ht", label=r"$H_{T}$ [GeV]"
+            200, 0, 4000, name="ht", label=r"$H_{T}$ [GeV]"
         )
         self.mass_axis = hist.axis.Regular(
             1000, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
@@ -698,30 +570,60 @@ class MakeAXOHists (processor.ProcessorABC):
         print("hist_dict initialized:",hist_dict)
        
         # Trigger requirement
-        for trigger_path in self.trigger_paths: # loop over trigger paths
-            events_trig = None
-                
-            # select events for current trigger
-            if trigger_path == "all":
-                print("all")
-                events_trig = events
-            else:
-                print(trigger_path)
-                trig_br = getattr(events,trigger_path.split('_')[0])
-                trig_path = '_'.join(trigger_path.split('_')[1:])
-                events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger  
-
-            # save cutflow information
-            cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
-
-            hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,trigger_path)
-                                        
-            if self.config["save_branches"]: # TODO: Get branch saving working when we want to save more than one branch 
-                # dak_zip = dak.zip(branch_save_dict, depth_limit=1)
-                # dak.to_parquet(dak_zip, "branches", storage_options={"overwrite": True})
-                for key, branch in branch_save_dict.items():
-                    dak.to_parquet(branch, f"branches/branches_{key}.parquet")
-
+        if self.config["module"] == "default" or self.config["module"] == "efficiency":
+            assert(("test" in self.config["dataset"]) or ("10" in self.config["module"]),"Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+            for trigger_path in self.trigger_paths: # loop over trigger paths
+                events_trig = None
+                    
+                # select events for current trigger
+                if trigger_path == "all_available_triggers":
+                    print("all_available_triggers")
+                    events_trig = events
+                else:
+                    print(trigger_path)
+                    trig_br = getattr(events,trigger_path.split('_')[0])
+                    trig_path = '_'.join(trigger_path.split('_')[1:])
+                    events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger  
+    
+                # save cutflow information
+                cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
+    
+                hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,trigger_path)
+                                            
+                if self.config["save_branches"]: 
+                    for key, branch in branch_save_dict.items():
+                        dak.to_parquet(branch, f"branches/branches_{key}.parquet")
+        
+        if self.config["module"] == "efficiency":
+            new_trigger_paths = []
+        
+            # Also save events that are triggered by both the trigger of interest and zerobias
+            ortho_trig = self.config["ortho_trig"]
+            ortho_trig_br = getattr(events,ortho_trig.split('_')[0])
+            ortho_trig_path = '_'.join(trigger_path.split('_')[1:])
+            events = events[getattr(trig_br,ortho_trig_path)] # select out events passing the orthogonal trigger  
+            
+            for trigger_path in self.trigger_paths: # loop over trigger paths
+                    events_trig = None
+                        
+                    # select events for current trigger
+                    if trigger_path == "all_available_triggers":
+                        print("all_available_triggers")
+                        events_trig = events
+                    else:
+                        print(trigger_path)
+                        trig_br = getattr(events,trigger_path.split('_')[0])
+                        trig_path = '_'.join(trigger_path.split('_')[1:])
+                        events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger  
+                    new_trigger_path = f"{ortho_trig}_{trigger_path}"
+                    new_trigger_paths += [new_trigger_path]
+        
+                    # save cutflow information
+                    cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
+        
+                    hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,new_trigger_path)
+            self.trigger_paths += new_trigger_paths 
+            
             
         return_dict = {}
         
@@ -740,6 +642,10 @@ class MakeAXOHists (processor.ProcessorABC):
 
 def main():
     """Main script execution."""
+    client = Client("tls://localhost:8786")
+    client.upload_file("./ScoutingNanoAODSchema.py");
+
+    
     config = load_config()  
 
     dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])

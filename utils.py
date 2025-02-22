@@ -75,12 +75,28 @@ draws 1d histogram from hist.Hist object "hist_in" for trigger "trigger" on matp
 "obj": if the histogram has an object axis, select this particular object
 "norm": whether to normalize histograms
 '''
-def draw_hist1d(hist_in, ax, trigger, label='', rebin=1, obj=None, norm=False):
+def draw_hist1d(hist_in=None, ax=None, trigger=None, label='', rebin=1, obj=None, norm=False):
     # slice histogram and rebin
+    # if rebin == None: # rebin automatically according to Terrel-Scott rule
+    #     if obj:
+    #         counts = hist_in.values()[...,trigger,obj].sum()
+    #         nbins = hist_in[...,trigger,obj].size()
+    #     else:
+    #         counts = hist_in.integrate("trigger", trigger).values().sum()
+    #         nbins = hist_in.size
+    #     nbins_new = np.power(2*counts,1/3)
+    #     if nbins_new < nbins:
+    #         rebin = int(nbins/nbins_new)
     if obj:
-        hist_in = hist_in[:, trigger, obj, hist.rebin(rebin)] 
+        try:
+            hist_in = hist_in[:, trigger, obj, hist.rebin(rebin)] 
+        except:
+            return
     else:
-        hist_in = hist_in[:, trigger, hist.rebin(rebin)] 
+        try:
+            hist_in = hist_in[:, trigger, hist.rebin(rebin)] 
+        except:
+            return
         
     counts, _, bins = hist_in.to_numpy() # get bin information from hist object
     
@@ -98,6 +114,7 @@ def draw_hist1d(hist_in, ax, trigger, label='', rebin=1, obj=None, norm=False):
         l = ax.errorbar(x=[],y=[],yerr=[],drawstyle='steps-post') # plot nothing
         color = l[0].get_color()
         ax.errorbar(x=[],y=[],drawstyle='steps-post',label=label,color=color)
+    return
     
 '''
 draws 2d histogram from hist.Hist object "hist_in" for trigger "trigger" on matplotlib axis "ax".

@@ -13,7 +13,7 @@ dataset_titles:
     '2024I_test': '2024I'
 
 trigger_labels:
-    'all' : 'All triggers'
+    'all_available_triggers' : 'All triggers'
     'DST_PFScouting_AXOLoose' : 'AXO Loose'
     'DST_PFScouting_AXONominal' : 'AXO Nominal'
     'DST_PFScouting_AXOTight' : 'AXO Tight'

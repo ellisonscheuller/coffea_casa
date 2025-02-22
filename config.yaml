@@ -1,12 +1,12 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "filePaths.json"  # name of json file containing root file paths
-dataset_name: "2024I_test"            # name of key within json containing dataset
+json_filename: "file_list.json"  # name of json file containing root file paths
+dataset_name: "2024I_10"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
 # Coffea configurations  --------------------------------------
-n_files: 1                                # number of files to process (-1 for all)
+n_files: -1                               # number of files to process (-1 for all)
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
@@ -43,31 +43,31 @@ diobject_pairings: # Which invariant mass pairs to consider
     - ["ScoutingPFJet","ScoutingPFJet"]
     - ["ScoutingElectron","ScoutingElectron"]
     - ["ScoutingMuonVtx","ScoutingMuonVtx"]
-    #- ["ScoutingElectron", "ScoutingMuonVtx"]
+    #- ["ScoutingElectron", "ScoutingMuonVtx"] # TODO get cross-object combos working
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    per_event: # histograms to make per event
-    - "anomaly_score"
-    - "ht"
-    - "met"
-    - "mult"
-    - "pt"
-    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    - "ht"
-    - "mult"
-    - "pt"
-    - "eta"
-    - "phi"
-    per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
-    - "pt"
-    - "eta"
-    - "phi"
+    # per_event: # histograms to make per event
+    # - "anomaly_score"
+    # - "ht"
+    # - "met"
+    # - "mult"
+    # - "pt"
+    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    # - "ht"
+    # - "mult"
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+    # - "pt"
+    # - "eta"
+    # - "phi"
     per_diobject_pair:
     - "mass"
-    - "pt"
-    - "eta"
-    - "phi"
+    # - "pt"
+    # - "eta"
+    # - "phi"
     
 histograms_2d: # not implemented yet TODO: implement
     - ["anomaly_score","ht"]
@@ -90,7 +90,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    # - 'all'
+    # - 'all_available_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
@@ -104,6 +104,9 @@ triggers:
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
     - 'DST_PFScouting_ZeroBias'
+
+ortho_trig: 'DST_PFScouting_ZeroBias' # for efficiency studies
+
 
 # List of branches to save to parquet file for fitting
 # which branches to save (comment out unwanted)
@@ -160,11 +163,10 @@ object_cleaning:
         eta: 10 
 
 # Modules to run -------------------------------------------
-modules:
-    - "default"
-    - "efficiency"
-    - "purity"
-    - "pileup"
+# module: "default"
+module: "efficiency"
+# module: "purity" # TODO: implement
+# module: "pileup" # TODO: implement
 
 # # Object labeling dictionary -------------------------------------------
 # object_label:
