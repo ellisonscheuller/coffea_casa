@@ -3,52 +3,117 @@
 json_filename: "filePaths.json"  # name of json file containing root file paths
 dataset_name: "2024I_test"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
-is_scouting: True                         # whether the files are scouting nanos
-axo_v: "v4"                               # which axo version to use for score hists
+axo_version: "v4"                               # which axo version to use for score hists
 
 # Coffea configurations  --------------------------------------
 n_files: 1                                # number of files to process (-1 for all)
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-visualize_task_graph: False                        # save task graph as pdf (only use when processing 1 or 2 files)
-save_hists: True                        # save histograms using pickle
-do_preprocess: True                    # create a preprocessing json file 
+visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
+save_hists: True                          # save histograms using pickle
+do_preprocessing: True                    # create a preprocessing json file 
 
 # Object configurations ----------------------------------
 # Which objects to process
 objects: 
-    # Scouting objects
+    scouting:
     - "ScoutingPFJet"
-    - "ScoutingElectron"
-    - "ScoutingMuonNoVtx"
-    - "ScoutingMuonVtx"
-    - "ScoutingPhoton"
-    # L1 objects 
+    # - "ScoutingElectron"
+    # - "ScoutingMuonNoVtx"
+    # - "ScoutingMuonVtx"
+    # - "ScoutingPhoton"
+    l1:
     - "L1Jet"
-    - "L1EGamma"
-    - "L1Mu"
-    # Full Reco objects
+    # - "L1EG"
+    # - "L1Mu"
+    # full_reco: # only works on non-scouting datasets
     # - "Jet"
     # - "Electron"
     # - "Muon"
- 
 
+diobject_pairings: # Which invariant mass pairs to consider
+    # - ["ScoutingPFJet","ScoutingPFJet"]
+    # - ["ScoutingElectron","ScoutingElectron"]
+    # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    # - ["ScoutingElectron", "ScoutingMuonVtx"]
+    
+# Histograms to make ---------------------------------------
+histograms_1d:
+    # per_event: # histograms to make per event
+    # - "anomaly_score"
+    # - "ht"
+    # - "met"
+    # - "mult"
+    # - "pt"
+    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    - "ht"
+    - "mult"
+    - "pt"
+    - "eta"
+    - "phi"
+    # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    # per_diobject_pair:
+    # - "m"
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    
+histograms_2d:
+    - ["anomaly_score","ht"]
+    - ["anomaly_score","met"]
+    - ["anomaly_score",["diobject","m"]]
+
+objects_max_i:  # number of objects to plot for pt ordered object plotting
+    "ScoutingPFJet" : 4
+    "ScoutingElectron": 4
+    "ScoutingMuonNoVtx": 4
+    "ScoutingMuonVtx": 4
+    "ScoutingPhoton": 4
+    "L1Jet": 4
+    "L1EG": 4
+    "L1Mu": 4
+    "Jet": 4
+    "Electron": 4
+    "Muon": 4
+
+    
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
+    - 'all'
+    # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
-    # - 'DST_PFScouting_AXOTight'
-    # - 'DST_PFScouting_AXOVLoose'
+    - 'DST_PFScouting_AXOTight'
     # - 'DST_PFScouting_AXOVTight'
+    # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
     # - 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
-    # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
     # - 'DST_PFScouting_ZeroBias'
+
+# List of branches to save to parquet file for fitting
+# which branches to save (comment out unwanted)
+branch_selection:
+    "dimuon": 
+        # - "dimuon_mass",                            # mass of dimuon pair
+        # - "dimuon_pt",                              # pt of dimuon pair
+        # - "dimuon_eta",                             # eta of dimuon pair
+        # - "dimuon_phi",                             # phi of dimuon pair
+        # - "dimuon_pt_1",                            # pt of first muon in dimuon pair
+        # - "dimuon_pt_2",                            # pt of second muon in dimuon pair
+        # - "dimuon_eta_1",                           # eta of first muon in dimuon pair
+        # - "dimuon_eta_2",                           # eta of second muon in dimuon pair
+        # - "dimuon_phi_1",                           # phi of first muon in dimuon pair
+        # - "dimuon_phi_2",                           # phi of second muon in dimuon pair
+    
+
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
@@ -86,6 +151,8 @@ object_cleaning:
         pt: 5.0 # GeV
         eta: 10 
 
+
+
 # # Object labeling dictionary -------------------------------------------
 # object_label:
 #     "ScoutingPFJet": "j"
@@ -99,13 +166,11 @@ object_cleaning:
 
 # AXOL1TL Thresholds -------------------------------------------
 axo_thresholds:
-    v3:
-        'AXOVTight'  : 25000/16
-        'AXOTight'   : 20486/16
-        'AXONominal' : 18580/16
-        'AXOLoose'   : 17596/16
-        'AXOVLoose'  : 15717/16
-    v4:
-    v5:
+- version: "v3"
+  path: "config/axo_thresholds_v3.csv"
+- version: "v4"
+  path: "config/axo_thresholds_v4.csv"
+
+
 
 

@@ -1,0 +1,51 @@
+cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
+normalized : False
+log_scale : True #False
+
+dataset_titles:
+    '2024F': '2024F'
+    '2024G': '2024G'
+    '2024H': '2024H'
+    '2024I': '2024I'
+    '2024F_test': '2024F'
+    '2024G_test': '2024G'
+    '2024H_test': '2024H'
+    '2024I_test': '2024I'
+
+trigger_labels:
+    'DST_PFScouting_AXOLoose' : 'AXO Loose'
+    'DST_PFScouting_AXONominal' : 'AXO Nominal'
+    'DST_PFScouting_AXOTight' : 'AXO Tight'
+    'DST_PFScouting_AXOVLoose' : ' AXO VLoose'
+    'DST_PFScouting_AXOVTight' : 'AXO VTight'
+    'DST_PFScouting_CICADALoose' : 'CICADA Loose'
+    'DST_PFScouting_CICADAMedium' : 'CICADA Medium'
+    'DST_PFScouting_CICADATight' : ' CICADA Tight'
+    'DST_PFScouting_CICADAVLoose' : 'CICADA VLoose'
+    'DST_PFScouting_CICADAVTight' : 'CICADA VTight'
+    'DST_PFScouting_DoubleMuon' : 'Double Muon'
+    'DST_PFScouting_JetHT' : 'Jet HT'
+    'DST_PFScouting_ZeroBias' : 'Zero Bias'
+
+label_templates:
+    anomaly_score: 'Anomaly Score'
+    totals: # histograms to make per event
+        'ht': '{} $H_T$ [GeV]'
+        'met': '{} $p^{miss}_{T}$ [GeV]'
+        'mult': '{} Total Object Multiplicity'
+        'pt': '{} Total Object $p_T$ [GeV]'
+    object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+        'ht': '{} $\sum p_T$ [GeV]'
+        'mult': 'Number of {}s'
+        'pt': 'All $p_T({})$ [GeV]'
+        'eta': 'All {} $\eta$'
+        'phi': 'All {} $\phi$'
+    object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+        'pt': 'Leading {} $p_T$ [GeV]'
+        'eta': 'Leading {} $\eta$'
+        'phi': 'Leading {} $\phi$'
+    diobject:
+        'm': '$m_{{}{}} [GeV]$'
+        'pt':  '$p_{T{}{}} [GeV]$'
+        'eta': '$\eta_T{{}{}}$'
+        'phi': '$\phi{{}{}}$'
