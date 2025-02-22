@@ -1,5 +1,5 @@
 cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
-normalized : True # False
+normalized :  False
 log_scale : True #False
 
 dataset_titles:
@@ -11,6 +11,10 @@ dataset_titles:
     '2024G_test': '2024G'
     '2024H_test': '2024H'
     '2024I_test': '2024I'
+    '2024F_10': '10% 2024F'
+    '2024G_10': '10% 2024G'
+    '2024H_10': '10% 2024H'
+    '2024I_10': '10% 2024I'
 
 trigger_labels:
     'all_available_triggers' : 'All triggers'
