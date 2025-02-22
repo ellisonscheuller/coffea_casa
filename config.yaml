@@ -10,59 +10,66 @@ n_files: 1                                # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
+do_preprocessing: True                    # create a preprocessing json file 
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
-do_preprocessing: True                    # create a preprocessing json file 
+save_branches: True                       # save branches to parquet file
+
 
 # Object configurations ----------------------------------
 # Which objects to process
 objects: 
-    scouting:
-    - "ScoutingPFJet"
-    # - "ScoutingElectron"
-    # - "ScoutingMuonNoVtx"
-    # - "ScoutingMuonVtx"
-    # - "ScoutingPhoton"
     l1:
     - "L1Jet"
-    # - "L1EG"
-    # - "L1Mu"
+    - "L1EG"
+    - "L1Mu"
+    # scouting:
+    # - "ScoutingPFJet"
+    # # - "ScoutingElectron"
+    # # - "ScoutingMuonNoVtx"
+    # # - "ScoutingMuonVtx"
+    # # - "ScoutingPhoton"
     # full_reco: # only works on non-scouting datasets
     # - "Jet"
     # - "Electron"
     # - "Muon"
 
 diobject_pairings: # Which invariant mass pairs to consider
-    # - ["ScoutingPFJet","ScoutingPFJet"]
-    # - ["ScoutingElectron","ScoutingElectron"]
-    # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
-    # - ["ScoutingElectron", "ScoutingMuonVtx"]
+    l1:
+    - ["L1Jet","L1Jet"]
+    - ["L1EG","L1EG"]
+    - ["L1Mu","L1Mu"]
+    scouting:
+    - ["ScoutingPFJet","ScoutingPFJet"]
+    - ["ScoutingElectron","ScoutingElectron"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    #- ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    # per_event: # histograms to make per event
-    # - "anomaly_score"
+    per_event: # histograms to make per event
+    - "anomaly_score"
     # - "ht"
     # - "met"
     # - "mult"
     # - "pt"
-    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    - "ht"
-    - "mult"
-    - "pt"
-    - "eta"
-    - "phi"
+    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    # - "ht"
+    # - "mult"
+    # - "pt"
+    # - "eta"
+    # - "phi"
     # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
     # - "pt"
     # - "eta"
     # - "phi"
-    # per_diobject_pair:
-    # - "m"
-    # - "pt"
-    # - "eta"
-    # - "phi"
+    per_diobject_pair:
+    - "mass"
+    - "pt"
+    - "eta"
+    - "phi"
     
-histograms_2d:
+histograms_2d: # not implemented yet
     - ["anomaly_score","ht"]
     - ["anomaly_score","met"]
     - ["anomaly_score",["diobject","m"]]
@@ -83,7 +90,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    - 'all'
+    # - 'all'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
@@ -120,6 +127,7 @@ object_cleaning:
     "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
         pt: 20.0 # GeV
         eta: 5
+        phi:
     "ScoutingElectron": # 
         pt: 5.0 # GeV
         eta: 10 

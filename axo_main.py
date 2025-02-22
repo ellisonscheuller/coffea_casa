@@ -149,7 +149,7 @@ hist_selection = {
 
 # ###################################################################################################
 # # HELPER FUNCTIONS FOR PROCESSOR
-def find_diObjs(events_obj_coll, isL1, isScouting):
+def find_diobjects(events_obj_coll, reconstruction_level):
     
     objs_dict = {
         "pt": events_obj_coll.pt,
@@ -158,7 +158,7 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
     }
     
     # set up four-vectors based on what kind of object we are dealing with
-    if isL1:
+    if reconstruction_level=="l1":
         objs = dak.zip(
             {
                 "pt": events_obj_coll.pt,
@@ -169,7 +169,7 @@ def find_diObjs(events_obj_coll, isL1, isScouting):
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
         )
-    elif isScouting:
+    elif reconstruction_level=="scouting":
         try:
             objs = dak.zip(
                 {
@@ -359,6 +359,14 @@ def save_histogram(hist_result, dataset_name):
         dill.dump(hist_result, f)
     print(f"Histogram saved as {filename}")
 
+def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
+    assert(has_scores, "Error, dataset does not have axol1tl scores")
+    if axo_version == "v4":
+        hist_values = events_trig.axol1tl.score_v4
+    elif axo_version == "v3":
+        hist_values = events_trig.axol1tl.score_v3
+    return hist_values
+
 def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
     """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
     level_map = {
@@ -419,9 +427,9 @@ def get_per_object_type_hist_values(objects, histogram):
         "mult": lambda: dak.num(objects),
         "pt": lambda:  dak.flatten(objects.pt),
         "eta": lambda:  dak.flatten(objects.eta),
-        "phi": lambda: dak.flatten(objects.phi)
+        "phi": lambda: dak.flatten(objects.phi),
     }
-    return level_map.get(histogram, {})
+    return level_map.get(histogram, {})()
 
 def get_per_object_hist_values(objects, i, histogram):
     """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
@@ -430,27 +438,27 @@ def get_per_object_hist_values(objects, i, histogram):
         "eta": lambda:  dak.flatten(objects.eta[:,i:i+1]),
         "phi": lambda: dak.flatten(objects.phi[:,i:i+1]),
     }
-    return level_map.get(histogram, {})
+    return level_map.get(histogram, {})()
 
 
-def clean_objects(objects, cuts):
-    level_map = {
-        "pt": lambda obj, cut:  dak.flatten(objects.pt[:,i:i+1]),
-        "eta": lambda obj, cut:  dak.flatten(objects.eta[:,i:i+1]),
-        "phi": lambda obj, cut: dak.flatten(objects.phi[:,i:i+1]),
-    }
-    
-    for cut in cuts:
+def clean_objects(objects, cuts,reconstruction_level=None):
+
+    if reconstruction_level == "l1":
+        objects = objects[objects.bx==0] # filter for bunch crossing == 0 
+
+    for cut, values in cuts.items():
         mask = None
-        if cut == "pt":
-            mask = (getattr(br,"pt") > cut)
-        elif cut == "pt_leq":
-            mask = (getattr(br,"pt") <= cut)
-        elif cut == "eta":
-            mask = (dak.abs(getattr(br,"eta")) <= cut)
+        if values:
+            if isinstance(values,list): # high and low values gives 
+                mask = (getattr(br,"pt") > cut) & (getattr(br,"pt") < cut)
+            else:
+                if cut == "eta":
+                    mask = (dak.abs(getattr(br,"eta")) <= cut)
+                elif cut == "phi":
+                    mask = (getattr(br,"pt") <= cut)
         if mask:
             objects = objects[mask]
-
+            
     return objects
     
 
@@ -480,29 +488,29 @@ class MakeAXOHists (processor.ProcessorABC):
         config=None
     ):
 
-        the_object_dict =  {'ScoutingPFJet' :      {'cut' : [('pt', 30.)], 'label' : 'j'},
-                            'ScoutingElectron' : {'cut' : [('pt', 10)], 'label' : 'e'},
-                            'ScoutingMuonNoVtx' :     {'cut' : [('pt', 3)], 'label' : '\mu'},
-                            'ScoutingPhoton' :     {'cut' : [('pt', 10)], 'label' : '\gamma'},
-                            'L1Jet' :    {'cut' : [('pt', 0.1)], 'label' : 'L1j'},
-                            'L1EG' :     {'cut' : [('pt', 0.1)], 'label' : 'L1e'},
-                            'L1Mu' :     {'cut' : [('pt', 0.1)], 'label' : 'L1\mu'}
-                           }
+        # the_object_dict =  {'ScoutingPFJet' :      {'cut' : [('pt', 30.)], 'label' : 'j'},
+        #                     'ScoutingElectron' : {'cut' : [('pt', 10)], 'label' : 'e'},
+        #                     'ScoutingMuonNoVtx' :     {'cut' : [('pt', 3)], 'label' : '\mu'},
+        #                     'ScoutingPhoton' :     {'cut' : [('pt', 10)], 'label' : '\gamma'},
+        #                     'L1Jet' :    {'cut' : [('pt', 0.1)], 'label' : 'L1j'},
+        #                     'L1EG' :     {'cut' : [('pt', 0.1)], 'label' : 'L1e'},
+        #                     'L1Mu' :     {'cut' : [('pt', 0.1)], 'label' : 'L1\mu'}
+        #                    }
     
-        self.run_dict = {
-            'thresholds' : thresholds if thresholds is not None else {
-                'AXOVTight_EMU'  : {'name'  : 'AXO VTight', 'score' : 25000/16},
-                'AXOTight_EMU'   : {'name'  : 'AXO Tight', 'score' : 20486/16},
-                'AXONominal_EMU' : {'name'  : 'AXO Nominal', 'score' : 18580/16},
-                'AXOLoose_EMU'   : {'name'  : 'AXO Loose', 'score' : 17596/16},
-                'AXOVLoose_EMU'  : {'name'  : 'AXO VLoose', 'score' : 15717/16},
-            },
-            'objects' : object_dict if object_dict is not None else the_object_dict
-        }
+        # self.run_dict = {
+        #     'thresholds' : thresholds if thresholds is not None else {
+        #         'AXOVTight_EMU'  : {'name'  : 'AXO VTight', 'score' : 25000/16},
+        #         'AXOTight_EMU'   : {'name'  : 'AXO Tight', 'score' : 20486/16},
+        #         'AXONominal_EMU' : {'name'  : 'AXO Nominal', 'score' : 18580/16},
+        #         'AXOLoose_EMU'   : {'name'  : 'AXO Loose', 'score' : 17596/16},
+        #         'AXOVLoose_EMU'  : {'name'  : 'AXO VLoose', 'score' : 15717/16},
+        #     },
+        #     'objects' : object_dict if object_dict is not None else the_object_dict
+        # }
 
-        self.sorted_keys = sorted(
-            self.run_dict['thresholds'],key=lambda i: self.run_dict['thresholds'][i]['score']
-        )
+        # self.sorted_keys = sorted(
+        #     self.run_dict['thresholds'],key=lambda i: self.run_dict['thresholds'][i]['score']
+        # )
         self.trigger_paths = trigger_paths
         self.objects = objects
         self.has_scores = has_scores
@@ -544,8 +552,8 @@ class MakeAXOHists (processor.ProcessorABC):
         self.ht_axis = hist.axis.Regular(
             100, 0, 2000, name="ht", label=r"$H_{T}$ [GeV]"
         )
-        self.minv_axis = hist.axis.Regular(
-            1000, 0, 3000, name="minv", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
+        self.mass_axis = hist.axis.Regular(
+            1000, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
         )
         self.minv_axis_log = hist.axis.Regular(
             1000, 0.01, 3000, name="minv_log", label=r"$m_{obj_{1},obj_{2}}$ [GeV]", 
@@ -563,6 +571,7 @@ class MakeAXOHists (processor.ProcessorABC):
         cutflow = defaultdict(int)
         cutflow['start'] = dak.num(events.event, axis=0)
         hist_dict = {}
+        branch_save_dict = {}
                
         # Check that the objects you want to run on match the available fields in the data
         for object_type in self.objects:
@@ -592,10 +601,10 @@ class MakeAXOHists (processor.ProcessorABC):
             'minv_log': self.minv_axis_log,
             'minv_low': self.minv_axis_low,
             'minv_mid': self.minv_axis_mid,
-            'm': self.minv_axis
+            'mass': self.mass_axis
         }
 
-        # Create histograms that will be filled for each trigger
+        # Initialze histograms that will be filled for each trigger
         for histogram_group, histograms in self.config["histograms_1d"].items():  # Process each histogram according to its group
             for histogram in histograms: # Variables to plot
                 if histogram == "anomaly_score": # Score doesn't depend on reco level
@@ -615,8 +624,10 @@ class MakeAXOHists (processor.ProcessorABC):
                             for i in range(self.config["objects_max_i"][obj]):
                                 hist_name = f"{obj}_{i}_{histogram}"
                                 hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
-                    elif histogram_group == "per_diobject_pair":  # Di-object pairs ---
-                        for obj_1, obj_2 in self.config["diobject_pairings"]:
+                if histogram_group == "per_diobject_pair":  # Di-object pairs ---
+                    for reconstruction_level in self.config["diobject_pairings"]:
+                        for pairing in self.config["diobject_pairings"][reconstruction_level]:
+                            obj_1, obj_2 = pairing[0],pairing[1]
                             hist_name = f"{obj_1}_{obj_2}_{histogram}"
                             hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
 
@@ -636,267 +647,74 @@ class MakeAXOHists (processor.ProcessorABC):
                 trig_path = '_'.join(trigger_path.split('_')[1:])
                 events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger  
 
-                
             # save cutflow information
             cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
 
             for histogram_group, histograms in self.config["histograms_1d"].items():
                 print("Histogram group: ", histogram_group)
-                for histogram in histograms:
-                    print("Histogram type: ",histogram)
-                    if histogram == "anomaly_score": # score hists with scalars
-                        if self.has_scores:
-                            if self.axo_version == "v4":
-                                hist_values = events_trig.axol1tl.score_v4
-                            elif self.axo_version == "v3":
-                                hist_values = events_trig.axol1tl.score_v3
-                        #print("hist_values",hist_values.compute())
-                        fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
-                    elif histogram_group == "per_event" and histogram != "anomaly_score":
-                        for reconstruction_level in self.config["objects"]:
-                            print("Reconstruction level: ",reconstruction_level)
-                            hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
-
-                            # if reconstruction_level == "l1":
-                            #     if histogram == "ht":
-                            #         hist_values = dak.flatten(events_trig.L1EtSum.pt[(events_trig.L1EtSum.etSumType==1) & (events_trig.L1EtSum.bx==0)])
-                            #     if histogram == "met":
-                            #         hist_values = dak.flatten(events_trig.L1EtSum.pt[(events_trig.L1EtSum.etSumType==2) & (events_trig.L1EtSum.bx==0)])
-                            #     if histogram == "mult":
-                            #         hist_values = (dak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) 
-                            #          + dak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) 
-                            #          + dak.num(events_trig.L1EG.bx[events_trig.L1EG.bx ==0]))
-                            #     if histogram == "pt":
-                            #         hist_values = (dak.sum(events_trig.L1Jet.pt[events_trig.L1Jet.bx == 0],axis=1) 
-                            #            + dak.sum(events_trig.L1Mu.pt[events_trig.L1Mu.bx == 0],axis=1) 
-                            #            + dak.sum(events_trig.L1EG.pt[events_trig.L1EG.bx ==0],axis=1))
-                            # if reconstruction_level == "scouting":
-                            #     if histogram == "ht":
-                            #         hist_values = dak.sum(events_trig.ScoutingPFJet.pt,axis=1)
-                            #     if histogram == "met":
-                            #         hist_values = events_trig.ScoutingMET.pt
-                            #     if histogram == "mult":
-                            #         hist_values = (dak.num(events_trig.ScoutingPFJet) 
-                            #                        + dak.num(events_trig.ScoutingElectron) 
-                            #                        + dak.num(events_trig.ScoutingPhoton) 
-                            #                        + dak.num(events_trig.ScoutingMuonNoVtx))
-                            #     if histogram == "pt":
-                            #         hist_values = (dak.sum(events_trig.ScoutingPFJet.pt,axis=1) 
-                            #                        + dak.sum(events_trig.ScoutingElectron.pt,axis=1)
-                            #                        + dak.sum(events_trig.ScoutingPhoton.pt,axis=1)
-                            #                        + dak.sum(events_trig.ScoutingMuonNoVtx.pt,axis=1))
-                            # if reconstruction_level == "full_reco":
-                            #     if histogram == "ht":
-                            #         hist_values = dak.sum(events_trig.Jet.pt,axis=1)
-                            #     if histogram == "met":
-                            #         hist_values = events_trig.MET.pt
-                            #     if histogram == "mult":
-                            #         hist_values = (dak.num(events_trig.Jet) 
-                            #                        + dak.num(events_trig.Electron) 
-                            #                        + dak.num(events_trig.Photon) 
-                            #                        + dak.num(events_trig.Muon))
-                            #     if histogram == "pt":
-                            #         hist_values = (dak.sum(events_trig.Jet.pt,axis=1) 
-                            #                        + dak.sum(events_trig.Electron.pt,axis=1) 
-                            #                        + dak.sum(events_trig.Photon.pt,axis=1) 
-                            #                        + dak.sum(events_trig.Muon.pt,axis=1))
-                            fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
-                    if histogram_group != "per_event":
-                        # Perform object level cleaning 
-                        for reconstruction_level, object_types in self.config["objects"].items():
-                            for object_type in object_types:
-                                print(object_type)
-                                objects = getattr(events_trig, object_type)
+                
+                if histogram_group == "per_event": # score hists with scalars
+                    for histogram in histograms:
+                        print("Histogram type: ",histogram)
+                        if histogram == "anomaly_score":
+                            hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
+                            fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
+                        else: 
+                            for reconstruction_level in self.config["objects"]:
+                                print("Reconstruction level: ",reconstruction_level)
+                                hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
+                                fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
                                 
-                                if reconstruction_level == "l1":
-                                    objects = objects[objects.bx==0] # filter for bunch crossing == 0 
-
-                                # Apply cuts defined in config
-                                #objects = clean_objects(objects, self.config["object_cleaning"])
-
-
-                                # for cut in self.config["object_cleaning"]:
-                                #     mask = None
-                                #     if cut == "pt":
-                                #         mask = (getattr(br,"pt") > cut)
-                                #     elif cut == "pt_leq":
-                                #         mask = (getattr(br,"pt") <= cut)
-                                #     elif cut == "eta":
-                                #         mask = (dak.abs(getattr(br,"eta")) <= cut)
-                                #     if mask:
-                                #         objects = objects[mask]
-                                    
-                                if histogram_group == "per_object_type":  
-                                    hist_values = get_per_object_type_hist_values(objects, histogram)
-                                    # if histogram == "ht":
-                                    #     hist_values = dak.flatten(objects.pt)
-                                    # elif histogram == "mult":
-                                    #     hist_values = dak.num(objects)
-                                    # elif histogram == "pt":
-                                    #     hist_values =  dak.flatten(objects.pt)
-                                    # elif histogram == "eta":
-                                    #     hist_values =  dak.flatten(objects.eta)
-                                    # elif histogram == "phi":
-                                    #     hist_values =  dak.flatten(objects.phi)
-                                        
-                                    fill_hist_1d(
-                                            hist_dict, 
-                                            object_type+"_"+histogram, 
-                                            dataset, 
-                                            hist_values, 
-                                            trigger_path, 
-                                            histogram
-                                        )
-        
-                                # if histogram_group == "per_object": 
-                                #     for i in range(self.config["objects_max_i"][object_type]):
-                                #         hist_values = get_per_object_hist_values(objects, i, histogram)
-                                #         fill_hist_1d(
-                                #                 hist_dict, 
-                                #                 object_type+"_"+str(i)+"_"+histogram, 
-                                #                 dataset, 
-                                #                 hist_values, 
-                                #                 trigger_path, 
-                                #                 histogram
-                                #             )
-                        
-
+                if histogram_group == "per_object_type" or histogram_group == "per_object":
+                    for reconstruction_level, object_types in self.config["objects"].items(): 
+                        for object_type in object_types:
+                            print("Object type:",object_type)
+                            objects = getattr(events_trig, object_type)
                             
-
-
-                    
-        # # dimuon analysis
-        # if len(self.hists_to_process["dimuon"])>0:
-        #     # At least two opposite sign muons
-        #     events = events[(dak.num(events.ScoutingMuonNoVtx,axis=1)>=2) & (dak.sum(events.ScoutingMuonNoVtx.charge[:,0:2],axis=1)==0)]
-        #     obj = "ScoutingMuonNoVtx"
-        #     obj_dict = self.run_dict['objects'][obj]
-            
-        #     # save branches if enabled
-        #     branch_save_dict = {}
-            
-        #     # create histograms to fill for each trigger
-        #     if ("m_log" in self.hists_to_process["dimuon"]):
-        #         hist_dict = create_hist_1d(
-        #             hist_dict, 
-        #             self.dataset_axis, 
-        #             self.trigger_axis, 
-        #             self.minv_axis_log, 
-        #             'dimuon_m_log'
-        #         )
-        #     if ("m_low" in self.hists_to_process["dimuon"]):
-        #         hist_dict = create_hist_1d(
-        #             hist_dict, 
-        #             self.dataset_axis, 
-        #             self.trigger_axis, 
-        #             self.minv_axis_low, 
-        #             'dimuon_m_low'
-        #         )
-        #     if ("m_mid" in self.hists_to_process["dimuon"]):
-        #         hist_dict = create_hist_1d(
-        #             hist_dict, 
-        #             self.dataset_axis, 
-        #             self.trigger_axis, 
-        #             self.minv_axis_mid, 
-        #             'dimuon_m_mid'
-        #         )
-        #     if ("m" in self.hists_to_process["dimuon"]):
-        #         hist_dict = create_hist_1d(
-        #             hist_dict, 
-        #             self.dataset_axis, 
-        #             self.trigger_axis, 
-        #             self.minv_axis, 
-        #             'dimuon_m'
-        #         )
-
-        #     for trigger_path in self.trigger_paths: # loop over trigger paths
-        #         events_trig = None
-
-        #         if trigger_path == "all":
-        #             events_trig = events
-        #         else:
-        #             trig_br = getattr(events,trigger_path.split('_')[0])
-        #             trig_path = '_'.join(trigger_path.split('_')[1:])
-        #             events_trig = events[getattr(trig_br,trig_path)] # select events passing this trigger
-        #         cutflow["dimuon"+trigger_path] = dak.num(events_trig.event, axis=0)
-
-        #         cut_list = obj_dict['cut']
-        #         label = obj_dict['label']
-        #         isL1Obj = 'L1' in obj
-        #         isScoutingObj = 'Scouting' in obj
-        #         br = getattr(events_trig, obj)
-
-        #         # Apply list of cuts to relevant branches
-        #         for var, cut in cut_list:
-        #             mask = (getattr(br,var) > cut)
-        #             br = br[mask]        
-
-        #         # Build di-object candidate
-        #         objs = br[dak.argsort(br.pt, axis=1)]
-        #         diObj = find_diObjs(objs[:,0:2], isL1Obj,isScoutingObj)
-
-        #         if ("m_log" in self.hists_to_process["dimuon"]):
-        #             hist_dict = fill_hist_1d(
-        #                 hist_dict, 
-        #                 'dimuon_m_log', 
-        #                 dataset, 
-        #                 dak.flatten(diObj.mass), 
-        #                 trigger_path, 
-        #                 "minv_log"
-        #             )
-        #         if ("m_low" in self.hists_to_process["dimuon"]):
-        #             hist_dict = fill_hist_1d(
-        #                 hist_dict, 
-        #                 'dimuon_m_low', 
-        #                 dataset, 
-        #                 dak.flatten(diObj.mass), 
-        #                 trigger_path, 
-        #                 "minv_low"
-        #             )
-        #         if ("m_mid" in self.hists_to_process["dimuon"]):
-        #             hist_dict = fill_hist_1d(
-        #                 hist_dict, 
-        #                 'dimuon_m_mid', 
-        #                 dataset, 
-        #                 dak.flatten(diObj.mass), 
-        #                 trigger_path, 
-        #                 "minv_mid"
-        #             )
-        #         if ("m" in self.hists_to_process["dimuon"]):
-        #             hist_dict = fill_hist_1d(
-        #                 hist_dict, 
-        #                 'dimuon_m', 
-        #                 dataset, 
-        #                 dak.flatten(diObj.mass), 
-        #                 trigger_path, 
-        #                 "minv"
-        #             )
-                    
-        #         # save branches if enabled
-        #         if "dimuon_mass" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_mass_{trigger_path}"] = dak.flatten(diObj.mass)
-        #         if "dimuon_pt" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_pt_{trigger_path}"] = dak.flatten(diObj.pt)
-        #         if "dimuon_eta" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_eta_{trigger_path}"] = dak.flatten(diObj.eta)
-        #         if "dimuon_phi" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_phi_{trigger_path}"] = dak.flatten(diObj.phi)
-        #         if "dimuon_pt_1" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_pt_1_{trigger_path}"] = dak.flatten(diObj.obj1_pt)
-        #         if "dimuon_pt_2" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_pt_2_{trigger_path}"] = dak.flatten(diObj.obj2_pt)
-        #         if "dimuon_eta_2" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_eta_1_{trigger_path}"] = dak.flatten(diObj.obj1_eta)
-        #         if "dimuon_eta_2" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_eta_2_{trigger_path}"] = dak.flatten(diObj.obj2_eta)
-        #         if "dimuon_phi_1" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_phi_1_{trigger_path}"] = dak.flatten(diObj.obj1_phi)
-        #         if "dimuon_phi_2" in self.branches_to_save["dimuon"]: 
-        #             branch_save_dict[f"dimuon_phi_2_{trigger_path}"] = dak.flatten(diObj.obj2_phi)
-                   
-        #     if len(self.branches_to_save["dimuon"])>0:
-        #         dak_zip = dak.zip(branch_save_dict)
-        #         dak_zip.persist().to_parquet("branches")
+                            # Apply object level cleaning
+                            objects = clean_objects(objects, self.config["object_cleaning"],reconstruction_level)
+                            for histogram in histograms:
+                                print("Histogram type: ",histogram)
+                                
+                                if histogram_group == "per_object_type":  
+                                    hist_values = get_per_object_type_hist_values(objects, histogram)  
+                                    fill_hist_1d(hist_dict, object_type+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+        
+                                if histogram_group == "per_object": 
+                                    for i in range(self.config["objects_max_i"][object_type]):
+                                        hist_values = get_per_object_hist_values(objects, i, histogram)
+                                        fill_hist_1d(hist_dict, object_type+"_"+str(i)+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+                elif histogram_group == "per_diobject_pair": 
+                    for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+                        for pairing in pairings:
+                            print("Pairing:",pairing)
+                            object_type_1 = pairing[0]
+                            object_type_2 = pairing[1]
+                            if object_type_1 == object_type_2: # same object
+                                objects = getattr(events_trig, object_type_1)
+                                objects = clean_objects(objects, self.config["object_cleaning"])
+                                di_objects = find_diobjects(objects[:,0:2], reconstruction_level)
+                            else:
+                                print("Error: Not implemented yet") # TODO: Make function for diobjects work for cases with two different object types
+                                objects_1 = getattr(events_trig, object_type_1)
+                                objects_1 = clean_objects(objects_1, self.config["object_cleaning"])
+                                objects_2 = getattr(events_trig, object_type_2)
+                                objects_2 = clean_objects(objects_2, self.config["object_cleaning"])
+                                di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
+                            for histogram in histograms:
+                                print("Histogram type: ",histogram)
+                                hist_values = dak.flatten(di_objects[histogram])#get_per_object_type_hist_values(di_objects, histogram)
+                                fill_hist_1d(hist_dict, f"{object_type_1}_{object_type_2}_{histogram}", dataset, hist_values, trigger_path, histogram)
+                                if self.config["save_branches"]:
+                                    branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = hist_values
+                                
+                                        
+            if self.config["save_branches"]: # TODO: Get branch saving working when we want to save more than one branch 
+                # dak_zip = dak.zip(branch_save_dict, depth_limit=1)
+                # dak.to_parquet(dak_zip, "branches", storage_options={"overwrite": True})
+                for key, branch in branch_save_dict.items():
+                    dak.to_parquet(branch, "branches" f"branches_{key}.parquet")
+                #dak_zip.persist().to_parquet("branches")
             
         return_dict = {}
         
