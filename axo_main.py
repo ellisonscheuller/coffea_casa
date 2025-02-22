@@ -460,7 +460,110 @@ def clean_objects(objects, cuts,reconstruction_level=None):
             objects = objects[mask]
             
     return objects
+
+def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger_path):
+
+        for histogram_group, histograms in self.config["histograms_1d"].items():
+            print("Histogram group: ", histogram_group)
+            
+            if histogram_group == "per_event": # score hists with scalars
+                for histogram in histograms:
+                    print("Histogram type: ",histogram)
+                    if histogram == "anomaly_score":
+                        hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
+                        fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
+                    else: 
+                        for reconstruction_level in self.config["objects"]:
+                            print("Reconstruction level: ",reconstruction_level)
+                            hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
+                            fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+                            
+            if histogram_group == "per_object_type" or histogram_group == "per_object":
+                for reconstruction_level, object_types in self.config["objects"].items(): 
+                    for object_type in object_types:
+                        print("Object type:",object_type)
+                        objects = getattr(events_trig, object_type)
+                        
+                        # Apply object level cleaning
+                        objects = clean_objects(objects, self.config["object_cleaning"],reconstruction_level)
+                        for histogram in histograms:
+                            print("Histogram type: ",histogram)
+                            
+                            if histogram_group == "per_object_type":  
+                                hist_values = get_per_object_type_hist_values(objects, histogram)  
+                                fill_hist_1d(hist_dict, object_type+"_"+histogram, dataset, hist_values, trigger_path, histogram)
     
+                            if histogram_group == "per_object": 
+                                for i in range(self.config["objects_max_i"][object_type]):
+                                    hist_values = get_per_object_hist_values(objects, i, histogram)
+                                    fill_hist_1d(hist_dict, object_type+"_"+str(i)+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+            elif histogram_group == "per_diobject_pair": 
+                for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+                    for pairing in pairings:
+                        print("Pairing:",pairing)
+                        object_type_1 = pairing[0]
+                        object_type_2 = pairing[1]
+                        if object_type_1 == object_type_2: # same object
+                            objects = getattr(events_trig, object_type_1)
+                            objects = clean_objects(objects, self.config["object_cleaning"])
+                            di_objects = find_diobjects(objects[:,0:2], reconstruction_level)
+                        else:
+                            print("Error: Not implemented yet") # TODO: Make function for diobjects work for cases with two different object types
+                            objects_1 = getattr(events_trig, object_type_1)
+                            objects_1 = clean_objects(objects_1, self.config["object_cleaning"])
+                            objects_2 = getattr(events_trig, object_type_2)
+                            objects_2 = clean_objects(objects_2, self.config["object_cleaning"])
+                            di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
+                        for histogram in histograms:
+                            print("Histogram type: ",histogram)
+                            hist_values = dak.flatten(di_objects[histogram])#get_per_object_type_hist_values(di_objects, histogram)
+                            fill_hist_1d(hist_dict, f"{object_type_1}_{object_type_2}_{histogram}", dataset, hist_values, trigger_path, histogram)
+                            if self.config["save_branches"]:
+                                branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = hist_values
+        return hist_dict, branch_save_dict
+       
+def initialize_hist_dict(self,hist_dict):
+    # Axis mapping 
+    axis_map = {
+        'anomaly_score': self.score_axis,
+        'ht': self.ht_axis,
+        'met': self.met_axis,
+        'mult': self.mult_axis,
+        'pt': self.pt_axis,
+        'object': self.object_axis,
+        'eta': self.eta_axis,
+        'phi': self.phi_axis,
+        'minv_log': self.minv_axis_log,
+        'minv_low': self.minv_axis_low,
+        'minv_mid': self.minv_axis_mid,
+        'mass': self.mass_axis
+    }
+    for histogram_group, histograms in self.config["histograms_1d"].items():  # Process each histogram according to its group
+        for histogram in histograms: # Variables to plot
+            if histogram == "anomaly_score": # Score doesn't depend on reco level
+                hist_name = f"{histogram}"  
+                hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
+                continue
+            for reconstruction_level in self.config["objects"]: # Reco level
+                if histogram_group == "per_event" and histogram != "anomaly_score": # Per event ---
+                    hist_name = f"{reconstruction_level}_{histogram}"
+                    hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
+                elif histogram_group == "per_object_type": # Per object type ---
+                    for obj in self.config["objects"][reconstruction_level]:
+                        hist_name = f"{obj}_{histogram}"
+                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+                elif histogram_group == "per_object": # Per pt ordered object ---
+                    for obj in self.config["objects"][reconstruction_level]:
+                        for i in range(self.config["objects_max_i"][obj]):
+                            hist_name = f"{obj}_{i}_{histogram}"
+                            hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+            if histogram_group == "per_diobject_pair":  # Di-object pairs ---
+                for reconstruction_level in self.config["diobject_pairings"]:
+                    for pairing in self.config["diobject_pairings"][reconstruction_level]:
+                        obj_1, obj_2 = pairing[0],pairing[1]
+                        hist_name = f"{obj_1}_{obj_2}_{histogram}"
+                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+    return hist_dict
 
 # ###################################################################################################
 # # DEFINE COFFEA PROCESSOR
@@ -588,49 +691,10 @@ class MakeAXOHists (processor.ProcessorABC):
             if trigger[0:2] == "L1":
                 assert(my_object[2:] in events.L1.fields,f"Error: {trigger} not in available L1 paths: {events.L1.fields}")
 
-        # Axis mapping 
-        axis_map = {
-            'anomaly_score': self.score_axis,
-            'ht': self.ht_axis,
-            'met': self.met_axis,
-            'mult': self.mult_axis,
-            'pt': self.pt_axis,
-            'object': self.object_axis,
-            'eta': self.eta_axis,
-            'phi': self.phi_axis,
-            'minv_log': self.minv_axis_log,
-            'minv_low': self.minv_axis_low,
-            'minv_mid': self.minv_axis_mid,
-            'mass': self.mass_axis
-        }
+
 
         # Initialze histograms that will be filled for each trigger
-        for histogram_group, histograms in self.config["histograms_1d"].items():  # Process each histogram according to its group
-            for histogram in histograms: # Variables to plot
-                if histogram == "anomaly_score": # Score doesn't depend on reco level
-                    hist_name = f"{histogram}"  
-                    hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
-                    continue
-                for reconstruction_level in self.config["objects"]: # Reco level
-                    if histogram_group == "per_event" and histogram != "anomaly_score": # Per event ---
-                        hist_name = f"{reconstruction_level}_{histogram}"
-                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
-                    elif histogram_group == "per_object_type": # Per object type ---
-                        for obj in self.config["objects"][reconstruction_level]:
-                            hist_name = f"{obj}_{histogram}"
-                            hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
-                    elif histogram_group == "per_object": # Per pt ordered object ---
-                        for obj in self.config["objects"][reconstruction_level]:
-                            for i in range(self.config["objects_max_i"][obj]):
-                                hist_name = f"{obj}_{i}_{histogram}"
-                                hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
-                if histogram_group == "per_diobject_pair":  # Di-object pairs ---
-                    for reconstruction_level in self.config["diobject_pairings"]:
-                        for pairing in self.config["diobject_pairings"][reconstruction_level]:
-                            obj_1, obj_2 = pairing[0],pairing[1]
-                            hist_name = f"{obj_1}_{obj_2}_{histogram}"
-                            hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
-
+        hist_dict = initialize_hist_dict(self,hist_dict)
         print("hist_dict initialized:",hist_dict)
        
         # Trigger requirement
@@ -650,71 +714,14 @@ class MakeAXOHists (processor.ProcessorABC):
             # save cutflow information
             cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
 
-            for histogram_group, histograms in self.config["histograms_1d"].items():
-                print("Histogram group: ", histogram_group)
-                
-                if histogram_group == "per_event": # score hists with scalars
-                    for histogram in histograms:
-                        print("Histogram type: ",histogram)
-                        if histogram == "anomaly_score":
-                            hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
-                            fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
-                        else: 
-                            for reconstruction_level in self.config["objects"]:
-                                print("Reconstruction level: ",reconstruction_level)
-                                hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
-                                fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
-                                
-                if histogram_group == "per_object_type" or histogram_group == "per_object":
-                    for reconstruction_level, object_types in self.config["objects"].items(): 
-                        for object_type in object_types:
-                            print("Object type:",object_type)
-                            objects = getattr(events_trig, object_type)
-                            
-                            # Apply object level cleaning
-                            objects = clean_objects(objects, self.config["object_cleaning"],reconstruction_level)
-                            for histogram in histograms:
-                                print("Histogram type: ",histogram)
-                                
-                                if histogram_group == "per_object_type":  
-                                    hist_values = get_per_object_type_hist_values(objects, histogram)  
-                                    fill_hist_1d(hist_dict, object_type+"_"+histogram, dataset, hist_values, trigger_path, histogram)
-        
-                                if histogram_group == "per_object": 
-                                    for i in range(self.config["objects_max_i"][object_type]):
-                                        hist_values = get_per_object_hist_values(objects, i, histogram)
-                                        fill_hist_1d(hist_dict, object_type+"_"+str(i)+"_"+histogram, dataset, hist_values, trigger_path, histogram)
-                elif histogram_group == "per_diobject_pair": 
-                    for reconstruction_level, pairings in self.config["diobject_pairings"].items():
-                        for pairing in pairings:
-                            print("Pairing:",pairing)
-                            object_type_1 = pairing[0]
-                            object_type_2 = pairing[1]
-                            if object_type_1 == object_type_2: # same object
-                                objects = getattr(events_trig, object_type_1)
-                                objects = clean_objects(objects, self.config["object_cleaning"])
-                                di_objects = find_diobjects(objects[:,0:2], reconstruction_level)
-                            else:
-                                print("Error: Not implemented yet") # TODO: Make function for diobjects work for cases with two different object types
-                                objects_1 = getattr(events_trig, object_type_1)
-                                objects_1 = clean_objects(objects_1, self.config["object_cleaning"])
-                                objects_2 = getattr(events_trig, object_type_2)
-                                objects_2 = clean_objects(objects_2, self.config["object_cleaning"])
-                                di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
-                            for histogram in histograms:
-                                print("Histogram type: ",histogram)
-                                hist_values = dak.flatten(di_objects[histogram])#get_per_object_type_hist_values(di_objects, histogram)
-                                fill_hist_1d(hist_dict, f"{object_type_1}_{object_type_2}_{histogram}", dataset, hist_values, trigger_path, histogram)
-                                if self.config["save_branches"]:
-                                    branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = hist_values
-                                
+            hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,trigger_path)
                                         
             if self.config["save_branches"]: # TODO: Get branch saving working when we want to save more than one branch 
                 # dak_zip = dak.zip(branch_save_dict, depth_limit=1)
                 # dak.to_parquet(dak_zip, "branches", storage_options={"overwrite": True})
                 for key, branch in branch_save_dict.items():
-                    dak.to_parquet(branch, "branches" f"branches_{key}.parquet")
-                #dak_zip.persist().to_parquet("branches")
+                    dak.to_parquet(branch, f"branches/branches_{key}.parquet")
+
             
         return_dict = {}
         

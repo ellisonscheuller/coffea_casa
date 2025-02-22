@@ -1,5 +1,5 @@
 cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
-normalized : False
+normalized : True # False
 log_scale : True #False
 
 dataset_titles:
@@ -13,6 +13,7 @@ dataset_titles:
     '2024I_test': '2024I'
 
 trigger_labels:
+    'all' : 'All triggers'
     'DST_PFScouting_AXOLoose' : 'AXO Loose'
     'DST_PFScouting_AXONominal' : 'AXO Nominal'
     'DST_PFScouting_AXOTight' : 'AXO Tight'
@@ -28,24 +29,53 @@ trigger_labels:
     'DST_PFScouting_ZeroBias' : 'Zero Bias'
 
 label_templates:
-    anomaly_score: 'Anomaly Score'
-    totals: # histograms to make per event
-        'ht': '{} $H_T$ [GeV]'
-        'met': '{} $p^{miss}_{T}$ [GeV]'
-        'mult': '{} Total Object Multiplicity'
-        'pt': '{} Total Object $p_T$ [GeV]'
-    object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    'totals': # histograms to make per event
+        'anomaly_score': 'Anomaly Score'
+        'ht': '$H_T$ [GeV]'
+        'met': '$p^{miss}_{T}$ [GeV]'
+        'mult': 'Total Object Multiplicity'
+        'pt': 'Total Object $p_T$ [GeV]'
+    'object_type': # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
         'ht': '{} $\sum p_T$ [GeV]'
         'mult': 'Number of {}s'
         'pt': 'All $p_T({})$ [GeV]'
         'eta': 'All {} $\eta$'
         'phi': 'All {} $\phi$'
-    object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
-        'pt': 'Leading {} $p_T$ [GeV]'
-        'eta': 'Leading {} $\eta$'
-        'phi': 'Leading {} $\phi$'
-    diobject:
-        'm': '$m_{{}{}} [GeV]$'
-        'pt':  '$p_{T{}{}} [GeV]$'
-        'eta': '$\eta_T{{}{}}$'
-        'phi': '$\phi{{}{}}$'
+    'object': # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+        'pt': '{} {} $p_T$ [GeV]'
+        'eta': '{} {} $\eta$'
+        'phi': '{} {} $\phi$'
+    'diobject':
+        'mass': '$m_{{{}{}}} [GeV]$'
+        'pt':  '$p_{{T{}{}}} [GeV]$'
+        'eta': '$\eta_{{{}{}}}$'
+        'phi': '$\phi_{{{}{}}}$'
+
+object_label_templates:
+   'L1Jet': 'L1 Jet'
+   'L1EG': 'L1 EG'
+   'L1Mu': 'L1 \mu '
+   'ScoutingPFJet': 'Jet'
+   'ScoutingElectron': 'e'
+   'ScoutingMuonNoVtx': '\mu '
+   'ScoutingMuonVtx': '\mu '
+   'ScoutingPhoton' : '\gamma '
+   'Jet': 'Jet'
+   'Electron': 'e'
+   'Muon': '\mu '
+
+object_level:
+    'l1':
+       - 'L1Jet'
+       - 'L1EG'
+       - 'L1Mu'
+    'scouting':
+       - 'ScoutingPFJet'
+       - 'ScoutingElectron'
+       - 'ScoutingMuonNoVtx'
+       - 'ScoutingMuonVtx'
+       - 'ScoutingPhoton' 
+    'full_reco':
+       - 'Jet'
+       - 'Electron'
+       - 'Muon'

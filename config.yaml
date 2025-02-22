@@ -13,7 +13,7 @@ coffea_max_chunks: 300000                 # maximum number of chunks to process
 do_preprocessing: True                    # create a preprocessing json file 
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
-save_branches: True                       # save branches to parquet file
+save_branches: False                       # save branches to parquet file
 
 
 # Object configurations ----------------------------------
@@ -23,12 +23,12 @@ objects:
     - "L1Jet"
     - "L1EG"
     - "L1Mu"
-    # scouting:
-    # - "ScoutingPFJet"
-    # # - "ScoutingElectron"
-    # # - "ScoutingMuonNoVtx"
-    # # - "ScoutingMuonVtx"
-    # # - "ScoutingPhoton"
+    scouting:
+    - "ScoutingPFJet"
+    - "ScoutingElectron"
+    - "ScoutingMuonNoVtx"
+    - "ScoutingMuonVtx"
+    - "ScoutingPhoton"
     # full_reco: # only works on non-scouting datasets
     # - "Jet"
     # - "Electron"
@@ -49,27 +49,27 @@ diobject_pairings: # Which invariant mass pairs to consider
 histograms_1d:
     per_event: # histograms to make per event
     - "anomaly_score"
-    # - "ht"
-    # - "met"
-    # - "mult"
-    # - "pt"
-    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
-    # - "mult"
-    # - "pt"
-    # - "eta"
-    # - "phi"
-    # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
-    # - "pt"
-    # - "eta"
-    # - "phi"
+    - "ht"
+    - "met"
+    - "mult"
+    - "pt"
+    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    - "ht"
+    - "mult"
+    - "pt"
+    - "eta"
+    - "phi"
+    per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+    - "pt"
+    - "eta"
+    - "phi"
     per_diobject_pair:
     - "mass"
     - "pt"
     - "eta"
     - "phi"
     
-histograms_2d: # not implemented yet
+histograms_2d: # not implemented yet TODO: implement
     - ["anomaly_score","ht"]
     - ["anomaly_score","met"]
     - ["anomaly_score",["diobject","m"]]
@@ -94,7 +94,7 @@ triggers:
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
-    - 'DST_PFScouting_AXOTight'
+    # - 'DST_PFScouting_AXOTight'
     # - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
@@ -103,7 +103,7 @@ triggers:
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
-    # - 'DST_PFScouting_ZeroBias'
+    - 'DST_PFScouting_ZeroBias'
 
 # List of branches to save to parquet file for fitting
 # which branches to save (comment out unwanted)
@@ -159,7 +159,12 @@ object_cleaning:
         pt: 5.0 # GeV
         eta: 10 
 
-
+# Modules to run -------------------------------------------
+modules:
+    - "default"
+    - "efficiency"
+    - "purity"
+    - "pileup"
 
 # # Object labeling dictionary -------------------------------------------
 # object_label:
