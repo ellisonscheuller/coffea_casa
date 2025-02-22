@@ -254,7 +254,7 @@ def save_histogram(hist_result, dataset_name):
     print(f"Histogram saved as {filename}")
 
 def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
-    assert(has_scores, "Error, dataset does not have axol1tl scores")
+    assert has_scores, "Error, dataset does not have axol1tl scores"
     if axo_version == "v4":
         hist_values = events_trig.axol1tl.score_v4
     elif axo_version == "v3":
@@ -551,17 +551,17 @@ class MakeAXOHists (processor.ProcessorABC):
         # Check that the objects you want to run on match the available fields in the data
         for object_type in self.objects:
             for my_object in object_type:
-                assert(my_object in events.fields,f"Error: {my_object} not in available fields: {events.fields}")
+                assert my_object in events.fields, f"Error: {my_object} not in available fields: {events.fields}" 
                 
         # Check that the triggers you have requested are available in the data
         for trigger in self.trigger_paths:
             if trigger[0:3] == "DST":
                 print(events.DST.fields)
-                assert(my_object[3:] in events.DST.fields,f"Error: {trigger} not in available DST paths: {events.DST.fields}")
+                assert my_object[3:] in events.DST.fields, f"Error: {trigger} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
-                assert(my_object[3:] in events.HLT.fields,f"Error: {trigger} not in available HLT paths: {events.HLT.fields}")
+                assert my_object[3:] in events.HLT.fields, f"Error: {trigger} not in available HLT paths: {events.HLT.fields}"
             if trigger[0:2] == "L1":
-                assert(my_object[2:] in events.L1.fields,f"Error: {trigger} not in available L1 paths: {events.L1.fields}")
+                assert my_object[2:] in events.L1.fields, f"Error: {trigger} not in available L1 paths: {events.L1.fields}"
 
 
 
@@ -571,7 +571,7 @@ class MakeAXOHists (processor.ProcessorABC):
        
         # Trigger requirement
         if self.config["module"] == "default" or self.config["module"] == "efficiency":
-            assert(("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"]),"Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+            assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
             for trigger_path in self.trigger_paths: # loop over trigger paths
                 events_trig = None
                     
