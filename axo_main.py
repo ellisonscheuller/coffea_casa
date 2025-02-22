@@ -571,7 +571,7 @@ class MakeAXOHists (processor.ProcessorABC):
        
         # Trigger requirement
         if self.config["module"] == "default" or self.config["module"] == "efficiency":
-            assert(("test" in self.config["dataset"]) or ("10" in self.config["module"]),"Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+            assert(("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"]),"Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
             for trigger_path in self.trigger_paths: # loop over trigger paths
                 events_trig = None
                     
