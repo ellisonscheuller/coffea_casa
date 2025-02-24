@@ -41,63 +41,68 @@ NanoAODSchema.warn_missing_crossrefs = False
 
 
 
-# ###################################################################################################
-# # HELPER FUNCTIONS FOR PROCESSOR
-def find_diobjects(events_obj_coll, reconstruction_level):
-    
-    objs_dict = {
-        "pt": events_obj_coll.pt,
-        "eta": events_obj_coll.eta,
-        "phi": events_obj_coll.phi,
-    }
-    
-    # set up four-vectors based on what kind of object we are dealing with
-    if reconstruction_level=="l1":
-        objs = dak.zip(
+####################################################################################################
+# HELPER FUNCTIONS FOR PROCESSOR
+
+def create_four_vectors(objects, reconstruction_level):
+    if reconstruction_level == "l1":
+        return dak.zip(
             {
-                "pt": events_obj_coll.pt,
-                "eta": events_obj_coll.eta,
-                "phi": events_obj_coll.phi,
-                "mass": dak.zeros_like(events_obj_coll.pt),
+                "pt": objects.pt,
+                "eta": objects.eta,
+                "phi": objects.phi,
+                "mass": dak.zeros_like(objects.pt),
             },
             with_name="PtEtaPhiMLorentzVector",
             behavior=vector.behavior,
         )
-    elif reconstruction_level=="scouting":
+    elif reconstruction_level == "scouting":
         try:
-            objs = dak.zip(
+            return dak.zip(
                 {
-                    "pt": events_obj_coll.pt,
-                    "eta": events_obj_coll.eta,
-                    "phi": events_obj_coll.phi,
-                    "mass": events_obj_coll.mass,
+                    "pt": objects.pt,
+                    "eta": objects.eta,
+                    "phi": objects.phi,
+                    "mass": objects.mass,
                 },
                 with_name="PtEtaPhiMLorentzVector",
                 behavior=vector.behavior,
             )
-        except:
-            objs = dak.zip(
+        except AttributeError:
+            return dak.zip(
                 {
-                    "pt": events_obj_coll.pt,
-                    "eta": events_obj_coll.eta,
-                    "phi": events_obj_coll.phi,
-                    "mass": events_obj_coll.m,
+                    "pt": objects.pt,
+                    "eta": objects.eta,
+                    "phi": objects.phi,
+                    "mass": objects.m,
                 },
                 with_name="PtEtaPhiMLorentzVector",
                 behavior=vector.behavior,
             )
     else:
-        objs = dak.zip({ 
-            k: getattr(events_obj_coll, k) for k in ["x", "y", "z", "t"] }, 
-            with_name="LorentzVector", 
-            behavior=events_obj_coll.behavior, 
+        return dak.zip(
+            {k: getattr(objects, k) for k in ["x", "y", "z", "t"]},
+            with_name="LorentzVector",
+            behavior=objects.behavior,
         )
-        
-    # get combinations
-    diObjs = dak.combinations(objs, 2, fields=["obj1", "obj2"])
+
+
+def find_diobjects(obj_coll1, obj_coll2, reconstruction_level):
+
+    objs1 = create_four_vectors(obj_coll1, reconstruction_level)
+    objs2 = create_four_vectors(obj_coll2, reconstruction_level)
+
+    # Create all possible pairings between objects from the two collections
+    diObjs = dak.cartesian({"obj1": objs1, "obj2": objs2})
+
+    # Remove self-pairings
+    if obj_coll1 is obj_coll2:
+        same_object_mask = diObjs.obj1.pt != diObjs.obj2.pt
+        diObjs = diObjs[same_object_mask]
+    
     diObj = dak.zip(
         {
-            "p4": diObjs.obj1+diObjs.obj2,
+            "p4": diObjs.obj1 + diObjs.obj2,
         },
     )
     
@@ -403,9 +408,8 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         if object_type_1 == object_type_2: # same object
                             objects = getattr(events_trig, object_type_1)
                             objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
-                            di_objects = find_diobjects(objects[:,0:2], reconstruction_level)
+                            di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
                         else:
-                            print("Error: Not implemented yet") # TODO: Make function for diobjects work for cases with two different object types
                             objects_1 = getattr(events_trig, object_type_1)
                             objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
                             objects_2 = getattr(events_trig, object_type_2)

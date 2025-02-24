@@ -43,7 +43,7 @@ diobject_pairings: # Which invariant mass pairs to consider
     # - ["ScoutingPFJet","ScoutingPFJet"]
     # - ["ScoutingElectron","ScoutingElectron"]
     - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
-    - ["ScoutingElectron", "ScoutingMuonVtx"] # TODO get cross-object combos working
+    - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
