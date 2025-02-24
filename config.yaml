@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
 json_filename: "file_list.json"  # name of json file containing root file paths
-dataset_name: "2024I_10"            # name of key within json containing dataset
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -10,7 +10,7 @@ n_files: -1                               # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: False #True                    # create a preprocessing json file 
+do_preprocessing: True                    # create a preprocessing json file 
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
 save_branches: False                       # save branches to parquet file
@@ -42,23 +42,23 @@ diobject_pairings: # Which invariant mass pairs to consider
     scouting:
     - ["ScoutingPFJet","ScoutingPFJet"]
     - ["ScoutingElectron","ScoutingElectron"]
-    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
     #- ["ScoutingElectron", "ScoutingMuonVtx"] # TODO get cross-object combos working
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    # per_event: # histograms to make per event
-    # - "anomaly_score"
-    # - "ht"
-    # - "met"
-    # - "mult"
-    # - "pt"
-    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
-    # - "mult"
-    # - "pt"
-    # - "eta"
-    # - "phi"
+    per_event: # histograms to make per event
+    - "anomaly_score"
+    - "ht"
+    - "met"
+    - "mult"
+    - "pt"
+    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    - "ht"
+    - "mult"
+    - "pt"
+    - "eta"
+    - "phi"
     # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
     # - "pt"
     # - "eta"
@@ -103,46 +103,12 @@ triggers:
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
-    - 'DST_PFScouting_ZeroBias'
+    # - 'DST_PFScouting_ZeroBias'
 
-ortho_trig: 'DST_PFScouting_ZeroBias' # for efficiency studies
-
-
-# List of branches to save to parquet file for fitting
-# which branches to save (comment out unwanted)
-branch_selection:
-    "dimuon": 
-        # - "dimuon_mass",                            # mass of dimuon pair
-        # - "dimuon_pt",                              # pt of dimuon pair
-        # - "dimuon_eta",                             # eta of dimuon pair
-        # - "dimuon_phi",                             # phi of dimuon pair
-        # - "dimuon_pt_1",                            # pt of first muon in dimuon pair
-        # - "dimuon_pt_2",                            # pt of second muon in dimuon pair
-        # - "dimuon_eta_1",                           # eta of first muon in dimuon pair
-        # - "dimuon_eta_2",                           # eta of second muon in dimuon pair
-        # - "dimuon_phi_1",                           # phi of first muon in dimuon pair
-        # - "dimuon_phi_2",                           # phi of second muon in dimuon pair
-    
-
+orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
-    "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
-        pt: 20.0 # GeV
-        eta: 5
-        phi:
-    "ScoutingElectron": # 
-        pt: 5.0 # GeV
-        eta: 10 
-    "ScoutingMuonNoVtx": # 
-        pt: 3.0 # GeV
-        eta: 10
-    "ScoutingMuonVtx": # 
-        pt: 3.0 # GeV 
-        eta: 10
-    "ScoutingPhoton": # 
-        pt: 5.0 # GeV
-        eta: 10
     "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
         pt: 0.1 # GeV
         eta: 5.0
@@ -152,6 +118,21 @@ object_cleaning:
     "L1Mu":
         pt: 0.1 # GeV
         eta: 2.4 # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
+    "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
+        pt: 20.0 # GeV
+        eta: 5
+    "ScoutingElectron": # 
+        pt: 4.0 # GeV
+        eta: 1.44 
+    "ScoutingMuonNoVtx": # 
+        pt: 3.0 # GeV
+        eta: 10
+    "ScoutingMuonVtx": # 
+        pt: 3.0 # GeV 
+        eta: 10
+    "ScoutingPhoton": # 
+        pt: 5.0 # GeV
+        eta: 10
     "Jet":
         pt: 30.0 # GeV
         eta: 10

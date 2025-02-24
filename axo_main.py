@@ -227,7 +227,7 @@ def process_histograms(dataset_runnable, config):
             trigger_paths=config["triggers"],
             objects=config["objects"],
             #hists_to_process=hist_selection,
-            branches_to_save=config["branch_selection"],
+            #branches_to_save=config["branch_selection"],
             has_scores=config["has_scores"], 
             axo_version=config["axo_version"],
             config=config
@@ -349,7 +349,7 @@ def clean_objects(objects, cuts,reconstruction_level=None):
                 if cut == "eta":
                     mask = (dak.abs(getattr(br,"eta")) <= cut)
                 elif cut == "phi":
-                    mask = (getattr(br,"pt") <= cut)
+                    mask = (getattr(br,"phi") <= cut)
         if mask:
             objects = objects[mask]
             
@@ -475,9 +475,9 @@ class MakeAXOHists (processor.ProcessorABC):
         #     "2d_diobject": [],
         #     "dimuon": [],
         # },
-        branches_to_save={
-            "dimuon": [],
-        },
+        # branches_to_save={
+        #     "dimuon": [],
+        # },
         has_scores=True,
         axo_version="v4",
         thresholds=None, 
@@ -490,7 +490,7 @@ class MakeAXOHists (processor.ProcessorABC):
         self.objects = objects
         self.has_scores = has_scores
         #self.hists_to_process = hists_to_process
-        self.branches_to_save = branches_to_save
+        #self.branches_to_save = branches_to_save
         self.axo_version = axo_version
         self.config = config
         
@@ -549,19 +549,22 @@ class MakeAXOHists (processor.ProcessorABC):
         branch_save_dict = {}
                
         # Check that the objects you want to run on match the available fields in the data
-        for object_type in self.objects:
-            for my_object in object_type:
+        for object_type in self.config["objects"]:
+            print(object_type)
+            for my_object in self.config["objects"][object_type]:
+                print(my_object)
                 assert my_object in events.fields, f"Error: {my_object} not in available fields: {events.fields}" 
                 
         # Check that the triggers you have requested are available in the data
+        print("Trigger paths:",self.trigger_paths)
         for trigger in self.trigger_paths:
+            print("Trigger",trigger)
             if trigger[0:3] == "DST":
-                print(events.DST.fields)
-                assert my_object[3:] in events.DST.fields, f"Error: {trigger} not in available DST paths: {events.DST.fields}"
+                assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
-                assert my_object[3:] in events.HLT.fields, f"Error: {trigger} not in available HLT paths: {events.HLT.fields}"
+                assert trigger[4:] in events.HLT.fields, f"Error: {trigger[4:]} not in available HLT paths: {events.HLT.fields}"
             if trigger[0:2] == "L1":
-                assert my_object[2:] in events.L1.fields, f"Error: {trigger} not in available L1 paths: {events.L1.fields}"
+                assert trigger[3:] in events.L1.fields, f"Error: {trigger[3:]} not in available L1 paths: {events.L1.fields}"
 
 
 
@@ -570,7 +573,7 @@ class MakeAXOHists (processor.ProcessorABC):
         print("hist_dict initialized:",hist_dict)
        
         # Trigger requirement
-        if self.config["module"] == "default" or self.config["module"] == "efficiency":
+        if self.config["module"] == "default": 
             assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
             for trigger_path in self.trigger_paths: # loop over trigger paths
                 events_trig = None
@@ -598,31 +601,44 @@ class MakeAXOHists (processor.ProcessorABC):
             new_trigger_paths = []
         
             # Also save events that are triggered by both the trigger of interest and zerobias
-            ortho_trig = self.config["ortho_trig"]
+            events_ortho=None
+            ortho_trig = self.config["orthogonal_trigger"]
+            #print("Orthogonal trigger name:",ortho_trig)
             ortho_trig_br = getattr(events,ortho_trig.split('_')[0])
-            ortho_trig_path = '_'.join(trigger_path.split('_')[1:])
-            events = events[getattr(trig_br,ortho_trig_path)] # select out events passing the orthogonal trigger  
+            ortho_trig_path = '_'.join(ortho_trig.split('_')[1:])
+            events_ortho = events[getattr(ortho_trig_br,ortho_trig_path)] # select out events passing the orthogonal trigger  
+            #print("All events: ",dak.num(events.event, axis=0).compute())
+            #print("Ortho events: ",(dak.num(events_ortho.event, axis=0).compute()))
+            cutflow[ortho_trig] = dak.num(events_ortho.event, axis=0)
+            hist_dict, branch_save_dict = run_the_megaloop(self, events_ortho, hist_dict, branch_save_dict,dataset,ortho_trig)
+
             
             for trigger_path in self.trigger_paths: # loop over trigger paths
+                    print(trigger_path)
                     events_trig = None
                         
                     # select events for current trigger
                     if trigger_path == "all_available_triggers":
                         print("all_available_triggers")
-                        events_trig = events
+                        events_trig = events_ortho
                     else:
-                        print(trigger_path)
-                        trig_br = getattr(events,trigger_path.split('_')[0])
+                        trig_br = getattr(events_ortho,trigger_path.split('_')[0])
                         trig_path = '_'.join(trigger_path.split('_')[1:])
-                        events_trig = events[getattr(trig_br,trig_path)] # select events passing trigger  
+                        events_trig = events_ortho[getattr(trig_br,trig_path)] # select events passing trigger 
+
+                    #print("Trigger: ", dak.num(events_trig.event, axis=0).compute())
+                
                     new_trigger_path = f"{ortho_trig}_{trigger_path}"
+                    print(new_trigger_path)
                     new_trigger_paths += [new_trigger_path]
         
                     # save cutflow information
                     cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
-        
+                          
                     hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,new_trigger_path)
             self.trigger_paths += new_trigger_paths 
+            if ortho_trig not in self.trigger_paths:
+                self.trigger_paths += [ortho_trig]
             
             
         return_dict = {}
@@ -645,7 +661,6 @@ def main():
     client = Client("tls://localhost:8786")
     client.upload_file("./ScoutingNanoAODSchema.py");
 
-    
     config = load_config()  
 
     dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])
