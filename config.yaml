@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
 json_filename: "file_list.json"  # name of json file containing root file paths
-dataset_name: "2024I"            # name of key within json containing dataset
+dataset_name: "2024I_test"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -10,7 +10,7 @@ n_files: -1                               # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                    # create a preprocessing json file 
+do_preprocessing: False                    # create a preprocessing json file 
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
 save_branches: False                       # save branches to parquet file
@@ -111,11 +111,10 @@ orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 object_cleaning:
     "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
         pt: [20.0, None] # GeV
-        eta: [-5, 5]
-        phi:
+        eta: [-2.4, 2.4]
     "ScoutingElectron": # 
         pt: [5.0, None] # GeV
-        eta: [-10, 10]
+        eta: [-1.44, 1.44]
     "ScoutingMuonNoVtx": # 
         pt: [3.0, None] # GeV
         eta: [-10, 10]
@@ -124,7 +123,7 @@ object_cleaning:
         eta: [-10, 10]
     "ScoutingPhoton": # 
         pt: [5.0, None] # GeV
-        eta: [-10, 10]
+        eta: [-1.44, 1.44]
     "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
         pt: [0.1, None] # GeV
         eta: [-5, 5]
