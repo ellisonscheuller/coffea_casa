@@ -360,7 +360,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
         for histogram_group, histograms in self.config["histograms_1d"].items():
             print("Histogram group: ", histogram_group)
             
-            if histogram_group == "per_event": # score hists with scalars
+            if histogram_group == "per_event": # event level histograms
                 for histogram in histograms:
                     print("Histogram type: ",histogram)
                     if histogram == "anomaly_score":
@@ -372,7 +372,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                             hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
                             fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
                             
-            if histogram_group == "per_object_type" or histogram_group == "per_object":
+            if histogram_group == "per_object_type" or histogram_group == "per_object": # object level histograms 
                 for reconstruction_level, object_types in self.config["objects"].items(): 
                     for object_type in object_types:
                         print("Object type:",object_type)
@@ -391,7 +391,8 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 for i in range(self.config["objects_max_i"][object_type]):
                                     hist_values = get_per_object_hist_values(objects, i, histogram)
                                     fill_hist_1d(hist_dict, object_type+"_"+str(i)+"_"+histogram, dataset, hist_values, trigger_path, histogram)
-            elif histogram_group == "per_diobject_pair": 
+                                    
+            elif histogram_group == "per_diobject_pair": # di-object masses etc 
                 for reconstruction_level, pairings in self.config["diobject_pairings"].items():
                     for pairing in pairings:
                         print("Pairing:",pairing)
@@ -438,7 +439,7 @@ def initialize_hist_dict(self,hist_dict):
                 hist_name = f"{histogram}"  
                 hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
                 continue
-            for reconstruction_level in self.config["objects"]: # Reco level
+            for reconstruction_level in self.config["objects"]: # Loop over different object reconstruction levels
                 if histogram_group == "per_event" and histogram != "anomaly_score": # Per event ---
                     hist_name = f"{reconstruction_level}_{histogram}"
                     hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
@@ -466,18 +467,6 @@ class MakeAXOHists (processor.ProcessorABC):
         self, 
         trigger_paths=[],
         objects=[],
-        # hists_to_process={
-        #     "1d_scalar": [],
-        #     "2d_scalar": [],
-        #     "1d_object": [],
-        #     "2d_object": [],
-        #     "1d_diobject": [],
-        #     "2d_diobject": [],
-        #     "dimuon": [],
-        # },
-        # branches_to_save={
-        #     "dimuon": [],
-        # },
         has_scores=True,
         axo_version="v4",
         thresholds=None, 
@@ -485,16 +474,13 @@ class MakeAXOHists (processor.ProcessorABC):
         config=None
     ):
 
-
         self.trigger_paths = trigger_paths
         self.objects = objects
         self.has_scores = has_scores
-        #self.hists_to_process = hists_to_process
-        #self.branches_to_save = branches_to_save
         self.axo_version = axo_version
         self.config = config
         
-        # Define axes for histograms
+        # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 
         # String based axes
         self.dataset_axis = hist.axis.StrCategory(
             [], growth=True, name="dataset", label="Primary dataset"
@@ -565,15 +551,16 @@ class MakeAXOHists (processor.ProcessorABC):
                 assert trigger[3:] in events.L1.fields, f"Error: {trigger[3:]} not in available L1 paths: {events.L1.fields}"
 
 
-
-
-        # Initialze histograms that will be filled for each trigger
+        # Initialize histograms that will be filled for each trigger
         hist_dict = initialize_hist_dict(self,hist_dict)
         print("hist_dict initialized:",hist_dict)
        
-        # Trigger requirement
+        # Run the different modules
         if self.config["module"] == "default": 
-            assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+            # This module makes 1D histograms for the triggers and objects specified in the configuration file
+            assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], 
+                   "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+            
             for trigger_path in self.trigger_paths: # loop over trigger paths
                 events_trig = None
                     
@@ -589,29 +576,27 @@ class MakeAXOHists (processor.ProcessorABC):
     
                 # save cutflow information
                 cutflow[trigger_path] = dak.num(events_trig.event, axis=0)
-    
+
+                # run over all objects specified in the configuration file
                 hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,trigger_path)
                                             
-                if self.config["save_branches"]: 
+                if self.config["save_branches"]: # save invariant mass distributions
                     for key, branch in branch_save_dict.items():
                         dak.to_parquet(branch, f"branches/branches_{key}.parquet")
         
         if self.config["module"] == "efficiency":
-            new_trigger_paths = []
-        
-            # Also save events that are triggered by both the trigger of interest and zerobias
-            events_ortho=None
+            # This module that makes uses the orthogonal method to study trigger efficiencies 
+
+            # select out events passing the orthogonal trigger 
             ortho_trig = self.config["orthogonal_trigger"]
-            #print("Orthogonal trigger name:",ortho_trig)
             ortho_trig_br = getattr(events,ortho_trig.split('_')[0])
             ortho_trig_path = '_'.join(ortho_trig.split('_')[1:])
-            events_ortho = events[getattr(ortho_trig_br,ortho_trig_path)] # select out events passing the orthogonal trigger  
-            #print("All events: ",dak.num(events.event, axis=0).compute())
-            #print("Ortho events: ",(dak.num(events_ortho.event, axis=0).compute()))
+            events_ortho = events[getattr(ortho_trig_br,ortho_trig_path)]
+            # save cutflow and distributions of the orthogonal trigger
             cutflow[ortho_trig] = dak.num(events_ortho.event, axis=0)
             hist_dict, branch_save_dict = run_the_megaloop(self, events_ortho, hist_dict, branch_save_dict,dataset,ortho_trig)
 
-            
+            new_trigger_paths = []
             for trigger_path in self.trigger_paths: # loop over trigger paths
                     print(trigger_path)
                     events_trig = None
@@ -620,28 +605,25 @@ class MakeAXOHists (processor.ProcessorABC):
                     if trigger_path == "all_available_triggers":
                         print("all_available_triggers")
                         events_trig = events_ortho
-                    else:
+                    else: # select events passing the orthogonal dataset and the trigger of interest
                         trig_br = getattr(events_ortho,trigger_path.split('_')[0])
                         trig_path = '_'.join(trigger_path.split('_')[1:])
-                        events_trig = events_ortho[getattr(trig_br,trig_path)] # select events passing trigger 
+                        events_trig = events_ortho[getattr(trig_br,trig_path)] 
 
-                    #print("Trigger: ", dak.num(events_trig.event, axis=0).compute())
-                
                     new_trigger_path = f"{ortho_trig}_{trigger_path}"
-                    print(new_trigger_path)
                     new_trigger_paths += [new_trigger_path]
         
-                    # save cutflow information
+                    # save cutflow information for the trigger of interest
                     cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
-                          
+
+                    # run over all objects specified in the configuration file
                     hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,new_trigger_path)
+                
             self.trigger_paths += new_trigger_paths 
             if ortho_trig not in self.trigger_paths:
                 self.trigger_paths += [ortho_trig]
-            
-            
+                
         return_dict = {}
-        
         return_dict['cutflow'] = [{i:cutflow[i].compute()} for i in cutflow]#.compute()
         return_dict['hists'] = hist_dict
         return_dict['trigger'] = self.trigger_paths if len(self.trigger_paths)>0 else None
