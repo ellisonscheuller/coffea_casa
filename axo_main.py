@@ -335,25 +335,28 @@ def get_per_object_hist_values(objects, i, histogram):
     return level_map.get(histogram, {})()
 
 
-def clean_objects(objects, cuts,reconstruction_level=None):
+def clean_objects(objects, cuts, reconstruction_level=None):
 
     if reconstruction_level == "l1":
-        objects = objects[objects.bx==0] # filter for bunch crossing == 0 
+        objects = objects[objects.bx==0] # Filter for bunch crossing == 0 
 
-    for cut, values in cuts.items():
-        mask = None
-        if values:
-            if isinstance(values,list): # high and low values gives 
-                mask = (getattr(br,"pt") > cut) & (getattr(br,"pt") < cut)
-            else:
-                if cut == "eta":
-                    mask = (dak.abs(getattr(br,"eta")) <= cut)
-                elif cut == "phi":
-                    mask = (getattr(br,"phi") <= cut)
-        if mask:
-            objects = objects[mask]
-            
-    return objects
+    # Find the first valid branch to initialize the mask
+    reference_branch = next((br for br in cuts if hasattr(objects, br)), None)
+    if reference_branch is None:
+        return objects  # No valid branches exist, return unmodified
+
+    # Initialize mask with all values set to True
+    mask = ak.ones_like(getattr(objects, reference_branch), dtype=bool)
+
+    for br, cut in cuts.items():
+        if cut and hasattr(objects, br):  # Ensure branch exists in objects
+            lower_cut = cut[0] if cut[0] is not None else float('-inf')
+            upper_cut = cut[1] if cut[1] is not None else float('inf')
+
+            # Apply cuts to the mask
+            mask = mask & (getattr(objects, br) > lower_cut) & (getattr(objects, br) < upper_cut)
+
+    return objects[mask]
 
 def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger_path):
 
@@ -379,7 +382,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         objects = getattr(events_trig, object_type)
                         
                         # Apply object level cleaning
-                        objects = clean_objects(objects, self.config["object_cleaning"],reconstruction_level)
+                        objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
                             
@@ -399,14 +402,14 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         object_type_2 = pairing[1]
                         if object_type_1 == object_type_2: # same object
                             objects = getattr(events_trig, object_type_1)
-                            objects = clean_objects(objects, self.config["object_cleaning"])
+                            objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
                             di_objects = find_diobjects(objects[:,0:2], reconstruction_level)
                         else:
                             print("Error: Not implemented yet") # TODO: Make function for diobjects work for cases with two different object types
                             objects_1 = getattr(events_trig, object_type_1)
-                            objects_1 = clean_objects(objects_1, self.config["object_cleaning"])
+                            objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
                             objects_2 = getattr(events_trig, object_type_2)
-                            objects_2 = clean_objects(objects_2, self.config["object_cleaning"])
+                            objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
                             di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
