@@ -109,39 +109,41 @@ orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
-    "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
-        pt: 0.1 # GeV
-        eta: 5.0
-    "L1EGamma": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
-        pt: 0.1 # GeV
-        eta: 2.5
-    "L1Mu":
-        pt: 0.1 # GeV
-        eta: 2.4 # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
     "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
-        pt: 20.0 # GeV
-        eta: 5
+        pt: [20.0, None] # GeV
+        eta: [-5, 5]
+        phi:
     "ScoutingElectron": # 
-        pt: 4.0 # GeV
-        eta: 1.44 
+        pt: [5.0, None] # GeV
+        eta: [-10, 10]
     "ScoutingMuonNoVtx": # 
-        pt: 3.0 # GeV
-        eta: 10
+        pt: [3.0, None] # GeV
+        eta: [-10, 10]
     "ScoutingMuonVtx": # 
-        pt: 3.0 # GeV 
-        eta: 10
+        pt: [3.0, None] # GeV
+        eta: [-10, 10]
     "ScoutingPhoton": # 
-        pt: 5.0 # GeV
-        eta: 10
+        pt: [5.0, None] # GeV
+        eta: [-10, 10]
+    "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
+        pt: [0.1, None] # GeV
+        eta: [-5, 5]
+    "L1EGamma": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
+        pt: [0.1, None] # GeV
+        eta: [-2.5, 2.5]
+    "L1Mu":
+        pt: [0.1, None] # GeV
+        eta: [-2.4, 2.4] # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
     "Jet":
-        pt: 30.0 # GeV
-        eta: 10
+        pt: [30.0, None] # GeV
+        eta: [-10, 10]
     "Muon":
-        pt: 3.0 # GeV
-        eta: 10 
+        pt: [3.0, None] # GeV
+        eta: [-10, 10]
     "Electron":
-        pt: 5.0 # GeV
-        eta: 10 
+        pt: [5.0, None] # GeV
+        eta: [-10, 10] 
+
 
 # Modules to run -------------------------------------------
 # module: "default"
