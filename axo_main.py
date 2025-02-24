@@ -550,18 +550,18 @@ class MakeAXOHists (processor.ProcessorABC):
                
         # Check that the objects you want to run on match the available fields in the data
         for object_type in self.objects:
-            for my_object in object_type:
+            for my_object in self.objects[object_type]:
                 assert my_object in events.fields, f"Error: {my_object} not in available fields: {events.fields}" 
                 
         # Check that the triggers you have requested are available in the data
         for trigger in self.trigger_paths:
             if trigger[0:3] == "DST":
                 print(events.DST.fields)
-                assert my_object[3:] in events.DST.fields, f"Error: {trigger} not in available DST paths: {events.DST.fields}"
+                assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
-                assert my_object[3:] in events.HLT.fields, f"Error: {trigger} not in available HLT paths: {events.HLT.fields}"
+                assert trigger[4:] in events.HLT.fields, f"Error: {trigger[4:]} not in available HLT paths: {events.HLT.fields}"
             if trigger[0:2] == "L1":
-                assert my_object[2:] in events.L1.fields, f"Error: {trigger} not in available L1 paths: {events.L1.fields}"
+                assert trigger[2:] in events.L1.fields, f"Error: {trigger[3:]} not in available L1 paths: {events.L1.fields}"
 
 
 
