@@ -254,9 +254,7 @@ def process_histograms(dataset_runnable, config):
 def save_histogram(hist_result, dataset_name):
     """Saves the histogram to a pickle file."""
     filename = f'hist_result_{dataset_name}_{datetime.date.today().strftime("%Y%m%d")}.pkl'
-    save(hist_result, 
-    with open(filename, 'wb') as f:
-        dill.dump(hist_result, f)
+    save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
 def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
