@@ -37,8 +37,13 @@ from coffea.dataset_tools import (
 
 from ScoutingNanoAODSchema import ScoutingNanoAODSchema
 NanoAODSchema.warn_missing_crossrefs = False
-
-
+# import uproot
+# uproot.dask_source(file_path, timeout=600)  # Set timeout to 600 seconds
+# import fsspec_xrootd
+# fsspec_xrootd.conf["xrd.timeout"] = 600  # Increase timeout
+# dask.cache.clear()
+import fsspec
+fsspec.config.conf['xrootd'] = {'timeout': 300}
 
 
 ####################################################################################################
@@ -631,7 +636,7 @@ class MakeAXOHists (processor.ProcessorABC):
                 self.trigger_paths += [ortho_trig]
                 
         return_dict = {}
-        return_dict['cutflow'] = [{i:cutflow[i].compute()} for i in cutflow]#.compute()
+        return_dict['cutflow'] = [{i:cutflow[i]} for i in cutflow]#[{i:cutflow[i].compute()} for i in cutflow]#.compute()
         return_dict['hists'] = hist_dict
         return_dict['trigger'] = self.trigger_paths if len(self.trigger_paths)>0 else None
                 
