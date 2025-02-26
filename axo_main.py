@@ -15,7 +15,6 @@ import dask
 from dask.distributed import Client
 import dask_awkward as dak
 import datetime
-import dill
 import hist
 import hist.dask as hda
 import json
@@ -29,6 +28,7 @@ import yaml
 from coffea.nanoevents.methods import vector
 from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
 import coffea.processor as processor
+from coffea.util import save
 from coffea.dataset_tools import (
     apply_to_fileset,
     max_chunks,
@@ -259,8 +259,7 @@ def process_histograms(dataset_runnable, config):
 def save_histogram(hist_result, dataset_name):
     """Saves the histogram to a pickle file."""
     filename = f'hist_result_{dataset_name}_{datetime.date.today().strftime("%Y%m%d")}.pkl'
-    with open(filename, 'wb') as f:
-        dill.dump(hist_result, f)
+    save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
 def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
@@ -592,9 +591,10 @@ class MakeAXOHists (processor.ProcessorABC):
                 # run over all objects specified in the configuration file
                 hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,trigger_path)
                                             
-                if self.config["save_branches"]: # save invariant mass distributions
-                    for key, branch in branch_save_dict.items():
-                        dak.to_parquet(branch, f"branches/branches_{key}.parquet")
+                if self.config["save_branches"]: 
+                    dak_zip = dak.zip(branch_save_dict)
+                    dak_zip.persist().to_parquet(self.config["branch_writing_path"] + "axo_branches")
+
         
         if self.config["module"] == "efficiency":
             # This module that makes uses the orthogonal method to study trigger efficiencies 
