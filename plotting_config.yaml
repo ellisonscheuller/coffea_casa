@@ -1,0 +1,100 @@
+cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
+normalized :  False #True #
+log_scale : True #False
+
+module : "purity"
+
+dataset_titles:
+    '2024F': '2024F'
+    '2024G': '2024G'
+    '2024H': '2024H'
+    '2024I': '2024I'
+    '2024F_test': '2024F'
+    '2024G_test': '2024G'
+    '2024H_test': '2024H'
+    '2024I_test': '2024I'
+    '2024F_10': '10% 2024F'
+    '2024G_10': '10% 2024G'
+    '2024H_10': '10% 2024H'
+    '2024I_10': '10% 2024I'
+
+trigger_labels:
+    'all_available_triggers' : 'All triggers'
+    'all_l1_triggers' : 'All L1 triggers'
+    'DST_PFScouting_AXOLoose' : 'AXO Loose'
+    'DST_PFScouting_AXONominal' : 'AXO Nominal'
+    'DST_PFScouting_AXOTight' : 'AXO Tight'
+    'DST_PFScouting_AXOVLoose' : ' AXO VLoose'
+    'DST_PFScouting_AXOVTight' : 'AXO VTight'
+    'DST_PFScouting_CICADALoose' : 'CICADA Loose'
+    'DST_PFScouting_CICADAMedium' : 'CICADA Medium'
+    'DST_PFScouting_CICADATight' : ' CICADA Tight'
+    'DST_PFScouting_CICADAVLoose' : 'CICADA VLoose'
+    'DST_PFScouting_CICADAVTight' : 'CICADA VTight'
+    'DST_PFScouting_DoubleMuon' : 'Double Muon'
+    'DST_PFScouting_JetHT' : 'Jet HT'
+    'DST_PFScouting_ZeroBias' : 'Zero Bias'
+
+label_templates:
+    'totals': # histograms to make per event
+        'anomaly_score': 'Anomaly Score'
+        'ht': '$H_T$ [GeV]'
+        'met': '$p^{miss}_{T}$ [GeV]'
+        'mult': 'Total Object Multiplicity'
+        'pt': 'Total Object $p_T$ [GeV]'
+    'object_type': # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+        'ht': '${} \sum p_T$ [GeV]'
+        'mult': 'Number of ${}$s'
+        'pt': 'All $p_T({})$ [GeV]'
+        'eta': 'All ${}$ $\eta$'
+        'phi': 'All ${}$ $\phi$'
+    'object': # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+        'pt': '{} ${}$ $p_T$ [GeV]'
+        'eta': '{} ${}$ $\eta$'
+        'phi': '{} ${}$ $\phi$'
+    'diobject':
+        'mass': '$m_{{{}{}}} [GeV]$'
+        'pt':  '$p_{{T{}{}}} [GeV]$'
+        'eta': '$\eta_{{{}{}}}$'
+        'phi': '$\phi_{{{}{}}}$'
+
+object_label_templates:
+   'L1Jet': 'L1 Jet'
+   'L1EG': 'L1 EG'
+   'L1Mu': 'L1 \mu '
+   'ScoutingPFJet': 'Jet'
+   'ScoutingElectron': 'e'
+   'ScoutingMuonNoVtx': '\mu_{{no vtx}} '
+   'ScoutingMuonVtx': '\mu '
+   'ScoutingPhoton' : '\gamma '
+   'Jet': 'Jet'
+   'Electron': 'e'
+   'Muon': '\mu '
+
+object_level:
+    'l1':
+       - 'L1Jet'
+       - 'L1EG'
+       - 'L1Mu'
+    'scouting':
+       - 'ScoutingPFJet'
+       - 'ScoutingElectron'
+       - 'ScoutingMuonNoVtx'
+       - 'ScoutingMuonVtx'
+       - 'ScoutingPhoton' 
+    'full_reco':
+       - 'Jet'
+       - 'Electron'
+       - 'Muon'
+
+rebin:
+    "L1Jet_L1Jet_mass" : 10
+    "L1Mu_L1Mu_mass" : 2
+    "L1EG_L1EG_mass" : 2
+    "L1Mu_L1Mu_pt" : 2
+    "L1Jet_L1EG_mass" : 10
+    "L1Jet_L1Mu_mass" : 10
+    "ScoutingPFJet_ScoutingPFJet_mass" : 10
+    "ScoutingElectron_ScoutingElectron_mass" : 2
+    "ScoutingMuonVtx_ScoutingMuonVtx_mass" : 2
+

@@ -1,0 +1,179 @@
+---
+# Data configurations --------------------------------------
+json_filename: "file_list.json"  # name of json file containing root file paths
+dataset_name: "2024I"            # name of key within json containing dataset
+has_scores: True                          # whether the files contain axo anomaly score branches
+axo_version: "v4"                               # which axo version to use for score hists
+
+# Coffea configurations  --------------------------------------
+n_files: -1                             # number of files to process (-1 for all)
+coffea_step_size: 200_000                 # step size for coffea processor
+coffea_files_per_batch: 1                 # files per batch for coffea processor
+coffea_max_chunks: 300000                 # maximum number of chunks to process
+do_preprocessing: True                  # create a preprocessing json file
+preprocessing_file: "preprocessed.json"
+visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
+save_hists: True                          # save histograms using pickle
+save_branches: False                       # save branches to parquet file
+branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save output parquet files, if enabled
+
+
+# Object configurations ----------------------------------
+# Which objects to process
+objects: 
+    l1:
+    - "L1Jet"
+    - "L1EG"
+    - "L1Mu"
+    # scouting:
+    # - "ScoutingPFJet"
+    # - "ScoutingElectron"
+    # - "ScoutingMuonNoVtx"
+    # - "ScoutingMuonVtx"
+    # - "ScoutingPhoton"
+    # full_reco: # only works on non-scouting datasets
+    # - "Jet"
+    # - "Electron"
+    # - "Muon"
+
+diobject_pairings: # Which invariant mass pairs to consider
+    l1:
+    - ["L1Jet","L1Jet"]
+    - ["L1EG","L1EG"]
+    - ["L1Mu","L1Mu"]
+    - ["L1Jet","L1EG"]
+    - ["L1Jet","L1Mu"]
+    
+    # scouting:
+    - ["ScoutingPFJet","ScoutingPFJet"]
+    - ["ScoutingElectron","ScoutingElectron"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
+    # - ["ScoutingElectron", "ScoutingMuonVtx"]
+    
+# Histograms to make ---------------------------------------
+histograms_1d:
+    per_event: # histograms to make per event
+    # # - "anomaly_score"
+    - "ht"
+    - "met"
+    # # - "mult"
+    # # - "pt"
+    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    # - "ht"
+    # - "mult"
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    # per_diobject_pair:
+    # - "mass"
+    # - "pt"
+    # - "eta"
+    # - "phi"
+    
+histograms_2d: # not implemented yet TODO: implement
+    - ["anomaly_score","ht"]
+    - ["anomaly_score","met"]
+    - ["anomaly_score",["diobject","m"]]
+
+objects_max_i:  # number of objects to plot for pt ordered object plotting
+    "ScoutingPFJet" : 4
+    "ScoutingElectron": 4
+    "ScoutingMuonNoVtx": 4
+    "ScoutingMuonVtx": 4
+    "ScoutingPhoton": 4
+    "L1Jet": 10
+    "L1EG": 4
+    "L1Mu": 4
+    "Jet": 4
+    "Electron": 4
+    "Muon": 4
+
+    
+# Which triggers to save (comment out unwanted or add) -----------------------
+triggers:
+    # - 'all_available_triggers'
+    - 'all_l1_triggers'
+    # - 'DST_PFScouting_AXOVLoose'
+    # - 'DST_PFScouting_AXOLoose' 
+    - 'DST_PFScouting_AXONominal'
+    # - 'DST_PFScouting_AXOTight'
+    # - 'DST_PFScouting_AXOVTight'
+    # - 'DST_PFScouting_CICADAVLoose'
+    # - 'DST_PFScouting_CICADALoose'
+    # - 'DST_PFScouting_CICADAMedium'
+    # - 'DST_PFScouting_CICADATight'
+    # - 'DST_PFScouting_CICADAVTight'
+    # - 'DST_PFScouting_DoubleMuon'
+    # - 'DST_PFScouting_JetHT'
+    # - 'DST_PFScouting_ZeroBias'
+
+orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
+
+# Object cleaning requirements -------------------------------------
+object_cleaning:
+    "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
+        pt: [20.0, null] # GeV
+        eta: [-2.4, 2.4]
+    "ScoutingElectron": # 
+        pt: [5.0, null] # GeV
+        eta: [-1.44, 1.44]
+    "ScoutingMuonNoVtx": # 
+        pt: [3.0, null] # GeV
+        eta: [-10, 10]
+    "ScoutingMuonVtx": # 
+        pt: [3.0, null] # GeV
+        eta: [-10, 10]
+    "ScoutingPhoton": # 
+        pt: [5.0, null] # GeV
+        eta: [-1.44, 1.44]
+    "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
+        pt: [0.1, null] # GeV
+        eta: [-5, 5]
+    "L1EG": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
+        pt: [0.1, null] # GeV
+        eta: [-2.5, 2.5]
+    "L1Mu":
+        pt: [0.1, null] # GeV
+        eta: [-2.4, 2.4] # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
+    "Jet":
+        pt: [30.0, null] # GeV
+        eta: [-10, 10]
+    "Muon":
+        pt: [3.0, null] # GeV
+        eta: [-10, 10]
+    "Electron":
+        pt: [5.0, null] # GeV
+        eta: [-10, 10] 
+
+
+# Modules to run -------------------------------------------
+# module: "default"
+module: "efficiency"
+# module: "purity" 
+# module: "pileup" # TODO: implement
+
+# # Object labeling dictionary -------------------------------------------
+# object_label:
+#     "ScoutingPFJet": "j"
+#     "ScoutingElectron": "e"
+#     "ScoutingMuonNoVtx": ""\mu""
+#     "ScoutingMuonVtx": ""\mu"" 
+#     "ScoutingPhoton": ""\gamma""
+#     "L1Jet": "j"
+#     "L1EGamma": "EG"
+#     "L1Mu": ""L1\mu""
+
+# AXOL1TL Thresholds -------------------------------------------
+axo_thresholds:
+- version: "v3"
+  path: "config/axo_thresholds_v3.csv"
+- version: "v4"
+  path: "config/axo_thresholds_v4.csv"
+
+
+
+
