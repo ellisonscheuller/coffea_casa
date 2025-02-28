@@ -23,6 +23,7 @@ import time
 import vector
 vector.register_awkward()
 import yaml
+import uproot
 
 # coffea imports
 from coffea.nanoevents.methods import vector
@@ -37,13 +38,9 @@ from coffea.dataset_tools import (
 
 from ScoutingNanoAODSchema import ScoutingNanoAODSchema
 NanoAODSchema.warn_missing_crossrefs = False
-# import uproot
-# uproot.dask_source(file_path, timeout=600)  # Set timeout to 600 seconds
-# import fsspec_xrootd
-# fsspec_xrootd.conf["xrd.timeout"] = 600  # Increase timeout
-# dask.cache.clear()
+
 import fsspec
-fsspec.config.conf['xrootd'] = {'timeout': 300}
+fsspec.config.conf['xrootd'] = {'timeout': 600}
 
 
 ####################################################################################################
@@ -221,7 +218,7 @@ def preprocess_dataset(dataset, config):
             json.dump((dataset_runnable, dataset_updated), f)
         print("Saved preprocessed filelist as preprocessed.json")
     else:
-        with open('preprocessed.json', 'r') as f:
+        with open(config["preprocessing_file"], 'r') as f:
             print("Loading preprocessed filelist from preprocessed.json")
             dataset_runnable, dataset_updated = json.load(f)
 
@@ -244,7 +241,7 @@ def process_histograms(dataset_runnable, config):
         ),
         max_chunks(dataset_runnable, config["coffea_max_chunks"]),
         schemaclass=ScoutingNanoAODSchema,
-        uproot_options={"allow_read_errors_with_report": (OSError, TypeError, KeyError)}
+        uproot_options={"allow_read_errors_with_report": (OSError, TypeError, KeyError, ValueError, RuntimeError, uproot.exceptions.KeyInFileError)}
     )
 
     if config["visualize_task_graph"]:
@@ -513,7 +510,7 @@ class MakeAXOHists (processor.ProcessorABC):
             500, 0, 5000, name="pt", label=r"$p_{T}$ [GeV]"
         )
         self.eta_axis = hist.axis.Regular(
-            150, -5, 5, name="eta", label=r"$\eta$"
+            50, -5, 5, name="eta", label=r"$\eta$"
         )
         self.phi_axis = hist.axis.Regular(
             30, -4, 4, name="phi", label=r"$\phi$"
@@ -525,7 +522,7 @@ class MakeAXOHists (processor.ProcessorABC):
             200, 0, 4000, name="ht", label=r"$H_{T}$ [GeV]"
         )
         self.mass_axis = hist.axis.Regular(
-            1000, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
+            300, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
         )
         self.minv_axis_log = hist.axis.Regular(
             1000, 0.01, 3000, name="minv_log", label=r"$m_{obj_{1},obj_{2}}$ [GeV]", 
@@ -567,10 +564,10 @@ class MakeAXOHists (processor.ProcessorABC):
         print("hist_dict initialized:",hist_dict)
        
         # Run the different modules
-        if self.config["module"] == "default": 
+        if self.config["module"] == "default" or self.config["module"] == "purity": 
             # This module makes 1D histograms for the triggers and objects specified in the configuration file
             assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], 
-                   "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")
+                   "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")  #don't unblind!
             
             for trigger_path in self.trigger_paths: # loop over trigger paths
                 events_trig = None
@@ -617,6 +614,16 @@ class MakeAXOHists (processor.ProcessorABC):
                     if trigger_path == "all_available_triggers":
                         print("all_available_triggers")
                         events_trig = events_ortho
+                    elif trigger_path == "all_l1_triggers":
+                        events_br = getattr(events_ortho, "L1")
+                        events_l1_selection = dak.zeros_like(getattr(events_br,"ZeroBias"))
+                        fields = [f for f in events_ortho.L1.fields if not ("CICADA" in f or "AXO" in f or "ZeroBias" in f)]
+                        #print(fields)
+                        for i in fields:
+                            events_l1_selection = dak.where(getattr(events_ortho.L1,i)==1, 1, events_l1_selection) # if triggered by a different bit set to 0
+                        events_l1_selection_bool = dak.values_astype(events_l1_selection,bool)
+                        events_trig = events_ortho[events_l1_selection_bool]
+
                     else: # select events passing the orthogonal dataset and the trigger of interest
                         trig_br = getattr(events_ortho,trigger_path.split('_')[0])
                         trig_path = '_'.join(trigger_path.split('_')[1:])
@@ -634,6 +641,62 @@ class MakeAXOHists (processor.ProcessorABC):
             self.trigger_paths += new_trigger_paths 
             if ortho_trig not in self.trigger_paths:
                 self.trigger_paths += [ortho_trig]
+
+        if self.config["module"] == "purity":
+            # This module looks at the purity of the triggered events with respect to other triggers
+            assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], 
+                   "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10") #don't unblind!
+            #for pure_wrt_to in ["DST"]:#,"HLT","DST"]:
+            for pure_wrt_to in ["L1"]:#,"HLT","DST"]:
+                #pure_wrt_to = "L1"#, "HLT", "DST"]
+                print(events.fields)
+                events_br = getattr(events, pure_wrt_to)
+                #events_pure_selection = dak.ones_like(getattr(events_br,"PFScouting_ZeroBias"))
+                events_pure_selection = dak.ones_like(getattr(events_br,"ZeroBias"))
+                
+                fields = [f for f in events_br.fields if not ("CICADA" in f or "AXO" in f or "ZeroBias" in f)]
+                # ---
+                for i in fields:
+                    events_pure_selection = dak.where(getattr(events_br,i)==1, 0, events_pure_selection) # if triggered by a different bit set to 0
+                events_pure = events[dak.values_astype(events_pure_selection,bool)]
+                # #----
+                # mask = dak.ones_like(getattr(events_br,"ZeroBias"),dtype=bool)#dak.ones_like(events_pure_selection, dtype=bool)
+
+                # # Iterate over the fields and apply the condition to the mask
+                # for i in fields:
+                #     mask = mask & (getattr(events_br, i) == 1)  # Collect which trigger bits are set to 1 
+                
+                # # Apply the final mask
+                # events_pure_selection = dak.where(mask, events_pure_selection, 0)
+                # events_pure = events[dak.values_astype(events_pure_selection,bool)]
+
+                new_trigger_paths = []
+                for trigger_path in self.trigger_paths: # loop over trigger paths
+                    events_trig = None
+                        
+                    # select events for current trigger
+                    if trigger_path == "all_available_triggers":
+                        print("all_available_triggers")
+                        events_trig = events_pure
+                    else:
+                        print(trigger_path)
+                        trig_br = getattr(events_pure,trigger_path.split('_')[0])
+                        trig_path = '_'.join(trigger_path.split('_')[1:])
+                        events_trig = events_pure[getattr(trig_br,trig_path)] # select events passing trigger 
+    
+                    new_trigger_path = f"pure_{pure_wrt_to}_{trigger_path}"
+                    new_trigger_paths += [new_trigger_path]
+    
+    
+                    # save cutflow information
+                    cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
+    
+                    # run over all objects specified in the configuration file
+                    hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset, new_trigger_path)
+                    
+                self.trigger_paths += new_trigger_paths 
+            
+                
                 
         return_dict = {}
         return_dict['cutflow'] = [{i:cutflow[i]} for i in cutflow]#[{i:cutflow[i].compute()} for i in cutflow]#.compute()

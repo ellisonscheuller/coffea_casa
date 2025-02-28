@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "filelist_new.json"  # name of json file containing root file paths
-dataset_name: "2024G"            # name of key within json containing dataset
+json_filename: "file_list.json"  # name of json file containing root file paths
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -10,7 +10,8 @@ n_files: -1                             # number of files to process (-1 for all
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                   # create a preprocessing json file 
+do_preprocessing: True                  # create a preprocessing json file
+preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
 save_branches: False                       # save branches to parquet file
@@ -20,10 +21,10 @@ branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save outpu
 # Object configurations ----------------------------------
 # Which objects to process
 objects: 
-    # l1:
-    # - "L1Jet"
-    # - "L1EG"
-    # - "L1Mu"
+    l1:
+    - "L1Jet"
+    - "L1EG"
+    - "L1Mu"
     # scouting:
     # - "ScoutingPFJet"
     # - "ScoutingElectron"
@@ -38,22 +39,25 @@ objects:
 diobject_pairings: # Which invariant mass pairs to consider
     l1:
     - ["L1Jet","L1Jet"]
-    # - ["L1EG","L1EG"]
-    # - ["L1Mu","L1Mu"]
+    - ["L1EG","L1EG"]
+    - ["L1Mu","L1Mu"]
+    - ["L1Jet","L1EG"]
+    - ["L1Jet","L1Mu"]
+    
     # scouting:
-    # - ["ScoutingPFJet","ScoutingPFJet"]
-    # - ["ScoutingElectron","ScoutingElectron"]
-    # - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
+    - ["ScoutingPFJet","ScoutingPFJet"]
+    - ["ScoutingElectron","ScoutingElectron"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
     # - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    # per_event: # histograms to make per event
-    # - "anomaly_score"
-    # - "ht"
-    # - "met"
-    # - "mult"
-    # - "pt"
+    per_event: # histograms to make per event
+    # # - "anomaly_score"
+    - "ht"
+    - "met"
+    # # - "mult"
+    # # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
     # - "ht"
     # - "mult"
@@ -64,8 +68,8 @@ histograms_1d:
     # - "pt"
     # - "eta"
     # - "phi"
-    per_diobject_pair:
-    - "mass"
+    # per_diobject_pair:
+    # - "mass"
     # - "pt"
     # - "eta"
     # - "phi"
@@ -81,7 +85,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingMuonNoVtx": 4
     "ScoutingMuonVtx": 4
     "ScoutingPhoton": 4
-    "L1Jet": 4
+    "L1Jet": 10
     "L1EG": 4
     "L1Mu": 4
     "Jet": 4
@@ -92,6 +96,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
     # - 'all_available_triggers'
+    - 'all_l1_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
@@ -148,7 +153,7 @@ object_cleaning:
 # Modules to run -------------------------------------------
 # module: "default"
 module: "efficiency"
-# module: "purity" # TODO: implement
+# module: "purity" 
 # module: "pileup" # TODO: implement
 
 # # Object labeling dictionary -------------------------------------------
