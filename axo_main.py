@@ -1,4 +1,5 @@
 ###################################################################################################
+###################################################################################################
 #   axo_studies.py                                                                                #
 #   Description: process axo-triggered events and save relevant observables in histograms         #
 #   Authors: Noah Zipper, Jannicke Pearkes, Ada Collins, Elliott Kauffman, Natalie Bruhwiler,     #
@@ -17,6 +18,7 @@ import dask_awkward as dak
 import datetime
 import hist
 import hist.dask as hda
+from itertools import chain
 import json
 import numpy as np
 import time
@@ -423,6 +425,26 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                             fill_hist_1d(hist_dict, f"{object_type_1}_{object_type_2}_{histogram}", dataset, hist_values, trigger_path, histogram)
                             if self.config["save_branches"]:
                                 branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = hist_values
+        
+        for histogram_group, histograms in self.config["histograms_2d"].items():
+            print("Histogram group: ", histogram_group)
+            
+            # get list of every observable needed
+            
+            
+            if histogram_group == "per_event_vs_per_event": # event level vs event level histograms
+                for histogram in histograms:
+                    print("Histogram type: ",histogram)
+                    if histogram == "anomaly_score":
+                        hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
+                        fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
+                    else:
+                        for reconstruction_level in self.config["objects"]:
+                            print("Reconstruction level: ",reconstruction_level)
+                            hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
+                            fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+        
+        
         return hist_dict, branch_save_dict
        
 def initialize_hist_dict(self,hist_dict):

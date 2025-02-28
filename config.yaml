@@ -56,8 +56,8 @@ histograms_1d:
     # # - "anomaly_score"
     - "ht"
     - "met"
-    # # - "mult"
-    # # - "pt"
+    # - "mult"
+    # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
     # - "ht"
     # - "mult"
@@ -75,9 +75,25 @@ histograms_1d:
     # - "phi"
     
 histograms_2d: # not implemented yet TODO: implement
+    per_event_vs_per_event:
     - ["anomaly_score","ht"]
     - ["anomaly_score","met"]
-    - ["anomaly_score",["diobject","m"]]
+    per_event_vs_per_object_type:
+    - ["anomaly_score","mult"]
+    per_event_vs_per_object:
+    - ["anomaly_score","pt"]
+    per_event_vs_per_diobject_pair:
+    - ["anomaly_scpre","mass"]
+    per_object_vs_per_object:
+    - ["eta","phi"]
+    per_diobject_pair_vs_per_diobject_pair:
+    - ["eta","phi"]
+    
+    
+    
+    per_object:
+    per_object_pair:
+    = ["anomaly_score", [""]]
 
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4
