@@ -366,7 +366,126 @@ def clean_objects(objects, cuts, reconstruction_level=None):
 
     return objects[mask]
 
+def get_required_observables(self):
+
+    required_observables = {
+        "per_event": set(),
+        "per_object_type": set(),
+        "per_object": set(),
+        "per_diobject_pair": set()
+    }
+
+    # get 1d histogram observables
+    for category, hist_list in self.config.get("histograms_1d", {}).items():
+        required_observables[category].update(hist_list)
+
+    # get 2d histogram observables
+    for entry in self.config.get("histograms_2d", []):
+        x_cat, x_var = entry["x_category"], entry["x_var"]
+        y_cat, y_var = entry["y_category"], entry["y_var"]
+
+        required_observables[x_cat].add(x_var)
+        required_observables[y_cat].add(y_var)
+
+    return required_observables
+
+def calculate_observables(self, observables, events):
+
+    observable_dict = {
+        "per_event": {},
+        "per_object_type": {},
+        "per_object": {},
+        "per_diobject_pair": {},
+    }
+
+    # calculate per-event observables
+    if "anomaly_score" in observables["per_event"]:
+        observable_dict["per_event"]["anomaly_score"] = get_anomaly_score_hist_values(
+            self.has_scores, 
+            self.axo_version, 
+            events
+        )
+    for observable in observables["per_event"]:
+        if observable!="anomaly_score":
+            for reconstruction_level in self.config["objects"]:
+                if reconstruction_level not in observable_dict["per_event"].keys():
+                    observable_dict["per_event"][reconstruction_level] = {}
+                observable_dict["per_event"][reconstruction_level][observable] = get_per_event_hist_values(
+                    reconstruction_level, 
+                    observable, 
+                    events
+                )
+
+    # calculate per-object-type and per-object observables
+    for reconstruction_level, object_types in self.config["objects"].items(): 
+        if reconstruction_level not in observable_dict["per_object_type"].keys():
+            observable_dict["per_object_type"][reconstruction_level] = {}
+
+        if reconstruction_level not in observable_dict["per_object"].keys():
+            observable_dict["per_object"][reconstruction_level] = {}
+        
+        for object_type in object_types:
+            if object_type not in observable_dict["per_object_type"][reconstruction_level].keys():
+                observable_dict["per_object_type"][reconstruction_level][object_type] = {}
+
+            if object_type not in observable_dict["per_object"][reconstruction_level].keys():
+                observable_dict["per_object"][reconstruction_level][object_type] = {}
+                        
+            # Get objects and apply object level cleaning
+            objects = getattr(events, object_type)
+            objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
+            
+            for observable in observables["per_object_type"]:
+                observable_dict["per_object_type"][reconstruction_level][object_type][observable] = get_per_object_type_hist_values(
+                    objects, 
+                    observable
+                )
+
+            for observable in observables["per_object"]:
+                for i in range(self.config["objects_max_i"][object_type]):
+                    observable_dict["per_object"][reconstruction_level][object_type][f"{observable}_{i}"] = get_per_object_hist_values(
+                        objects, 
+                        i, 
+                        observable)
+
+        # calculate per-diobject-pair observables
+        for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+            if reconstruction_level not in observable_dict["per_diobject_pair"].keys():
+                observable_dict["per_diobject_pair"][reconstruction_level] = {}
+
+            for pairing in pairings:
+                object_type_1 = pairing[0]
+                object_type_2 = pairing[1]
+                if f"{object_type_1}_{object_type_2}" not in observable_dict["per_diobject_pair"][reconstruction_level].keys():
+                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"] = {}
+                if object_type_1 == object_type_2: # same object
+                    objects = getattr(events, object_type_1)
+                    objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
+                    di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
+                else:
+                    objects_1 = getattr(events, object_type_1)
+                    objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
+                    objects_2 = getattr(events, object_type_2)
+                    objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
+                    di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
+                        
+                for observable in observables["per_diobject_pair"]:
+                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
+                        
+            
+
+    return observable_dict
+        
+
+
 def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger_path):
+
+        # get dictionary of observables to compute
+        required_observables = get_required_observables(self)
+        print("required observables = ", required_observables)
+
+        # compute observables
+        observable_calculations = calculate_observables(self, required_observables, events_trig)
 
         for histogram_group, histograms in self.config["histograms_1d"].items():
             print("Histogram group: ", histogram_group)
@@ -375,33 +494,53 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                 for histogram in histograms:
                     print("Histogram type: ",histogram)
                     if histogram == "anomaly_score":
-                        hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
-                        fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
+                        fill_hist_1d(
+                            hist_dict, 
+                            histogram, 
+                            dataset, 
+                            observable_calculations["per_event"]["anomaly_score"], 
+                            trigger_path, 
+                            histogram
+                        )
                     else: 
                         for reconstruction_level in self.config["objects"]:
                             print("Reconstruction level: ",reconstruction_level)
-                            hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
-                            fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+                            fill_hist_1d(
+                                hist_dict, 
+                                reconstruction_level+"_"+histogram, 
+                                dataset, 
+                                observable_calculations["per_event"][reconstruction_level][histogram], 
+                                trigger_path, 
+                                histogram
+                            )
                             
             if histogram_group == "per_object_type" or histogram_group == "per_object": # object level histograms 
                 for reconstruction_level, object_types in self.config["objects"].items(): 
                     for object_type in object_types:
                         print("Object type:",object_type)
-                        objects = getattr(events_trig, object_type)
-                        
-                        # Apply object level cleaning
-                        objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
                             
                             if histogram_group == "per_object_type":  
-                                hist_values = get_per_object_type_hist_values(objects, histogram)  
-                                fill_hist_1d(hist_dict, object_type+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+                                fill_hist_1d(
+                                    hist_dict, 
+                                    object_type+"_"+histogram, 
+                                    dataset, 
+                                    observable_calculations["per_object_type"][reconstruction_level][object_type][histogram], 
+                                    trigger_path, 
+                                    histogram
+                                )
     
                             if histogram_group == "per_object": 
                                 for i in range(self.config["objects_max_i"][object_type]):
-                                    hist_values = get_per_object_hist_values(objects, i, histogram)
-                                    fill_hist_1d(hist_dict, object_type+"_"+str(i)+"_"+histogram, dataset, hist_values, trigger_path, histogram)
+                                    fill_hist_1d(
+                                        hist_dict, 
+                                        object_type+"_"+str(i)+"_"+histogram, 
+                                        dataset,
+                                        observable_calculations["per_object"][reconstruction_level][object_type][f"{histogram}_{i}"],
+                                        trigger_path, 
+                                        histogram
+                                    )
                                     
             elif histogram_group == "per_diobject_pair": # di-object masses etc 
                 for reconstruction_level, pairings in self.config["diobject_pairings"].items():
@@ -409,40 +548,19 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         print("Pairing:",pairing)
                         object_type_1 = pairing[0]
                         object_type_2 = pairing[1]
-                        if object_type_1 == object_type_2: # same object
-                            objects = getattr(events_trig, object_type_1)
-                            objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
-                            di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
-                        else:
-                            objects_1 = getattr(events_trig, object_type_1)
-                            objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
-                            objects_2 = getattr(events_trig, object_type_2)
-                            objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
-                            di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
-                            hist_values = dak.flatten(di_objects[histogram])#get_per_object_type_hist_values(di_objects, histogram)
-                            fill_hist_1d(hist_dict, f"{object_type_1}_{object_type_2}_{histogram}", dataset, hist_values, trigger_path, histogram)
+                            fill_hist_1d(
+                                hist_dict,
+                                f"{object_type_1}_{object_type_2}_{histogram}", 
+                                dataset, 
+                                observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram], 
+                                trigger_path, 
+                                histogram
+                            )
                             if self.config["save_branches"]:
-                                branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = hist_values
+                                branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram]
         
-        for histogram_group, histograms in self.config["histograms_2d"].items():
-            print("Histogram group: ", histogram_group)
-            
-            # get list of every observable needed
-            
-            
-            if histogram_group == "per_event_vs_per_event": # event level vs event level histograms
-                for histogram in histograms:
-                    print("Histogram type: ",histogram)
-                    if histogram == "anomaly_score":
-                        hist_values = get_anomaly_score_hist_values(self.has_scores, self.axo_version, events_trig)
-                        fill_hist_1d(hist_dict, histogram, dataset, hist_values, trigger_path, histogram)
-                    else:
-                        for reconstruction_level in self.config["objects"]:
-                            print("Reconstruction level: ",reconstruction_level)
-                            hist_values = get_per_event_hist_values(reconstruction_level, histogram, events_trig)
-                            fill_hist_1d(hist_dict, reconstruction_level+"_"+histogram, dataset, hist_values, trigger_path, histogram)
         
         
         return hist_dict, branch_save_dict
