@@ -472,11 +472,7 @@ def calculate_observables(self, observables, events):
                 for observable in observables["per_diobject_pair"]:
                     observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
                         
-            
-
     return observable_dict
-        
-
 
 def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger_path):
 
@@ -487,6 +483,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
         # compute observables
         observable_calculations = calculate_observables(self, required_observables, events_trig)
 
+        # fill 1d histograms
         for histogram_group, histograms in self.config["histograms_1d"].items():
             print("Histogram group: ", histogram_group)
             
@@ -560,9 +557,119 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                             )
                             if self.config["save_branches"]:
                                 branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram]
-        
-        
-        
+
+        # fill 2d histograms
+        for entry in self.config["histograms_2d"]:
+            x_cat, x_var = entry["x_category"], entry["x_var"]
+            y_cat, y_var = entry["y_category"], entry["y_var"]
+            print("2D Histogram: ", x_cat, "-", x_var, ", ", y_cat, "-", y_var)
+
+            if (x_cat == "per_diobject_pair") and ((y_cat == "per_object_type") | (y_cat == "per_object")):
+                raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
+            if (y_cat == "per_diobject_pair") and ((x_cat == "per_object_type") | (x_cat == "per_object")):
+                raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
+
+            for reconstruction_level in self.config["objects"]:
+                if x_cat=="per_event": 
+                    if x_var == "anomaly_score":
+                        x_obs = observable_calculations["per_event"]["anomaly_score"]
+                    else: 
+                        x_obs = observable_calculations["per_event"][reconstruction_level][x_var]
+
+                if y_cat=="per_event": 
+                    if y_var == "anomaly_score":
+                        y_obs = observable_calculations["per_event"]["anomaly_score"]
+                    else: 
+                        y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+
+                # fill histogram if neither category is per object
+                if (x_cat=="per_event") and (y_cat=="per_event"):
+                    hist_name = reconstruction_level+"_"+x_var+"_"+y_var
+                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                    continue
+            
+
+                x_is_object = x_cat in ["per_object_type", "per_object"]
+                y_is_object = x_cat in ["per_object_type", "per_object"]
+                        
+                if x_is_object or y_is_object:
+                    for object_type in self.config["objects"][reconstruction_level]:
+
+                        # handle per_object_type cases
+                        if x_cat=="per_object_type":
+                            x_obs = observable_calculations["per_object_type"][reconstruction_level][object_type][x_var]
+                        if y_cat=="per_object_type":
+                            y_obs = observable_calculations["per_object_type"][reconstruction_level][object_type][y_var]
+
+                        
+
+                        # fill histogram if we already have all info
+                        hist_name = ""
+                        if (x_cat=="per_event") and (y_cat=="per_object_type"):
+                            hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                        elif (x_cat=="per_object_type") and (y_cat=="per_event"):
+                            hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                        elif (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                            hist_name = object_type+"_"+x_var+"_"+object_type+"_"+y_var
+                        if hist_name!="":
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            continue
+                        
+
+                        # handle per_object cases
+                        if (x_cat=="per_object") or (y_cat=="per_object"):
+                            for i in range(self.config["objects_max_i"][object_type]):
+                                if x_cat=="per_object":
+                                    x_obs = observable_calculations["per_object"][reconstruction_level][object_type][f"{x_var}_{i}"]
+                                if y_cat=="per_object":
+                                    y_obs = observable_calculations["per_object"][reconstruction_level][object_type][f"{y_var}_{i}"]
+
+                                # fill histograms if we have all info
+                                hist_name = ""
+                                if x_cat=="per_object":
+                                    if y_cat=="per_event":
+                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                    if y_cat=="per_object_type":
+                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                    if y_cat=="per_object":
+                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                if y_cat=="per_object":
+                                    if x_cat=="per_event":
+                                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    if x_cat=="per_object_type":
+                                        hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                if hist_name!="":
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                    continue
+
+            # handle per_diobject_pair cases
+            if (x_cat=="per_diobject_pair") or (y_cat=="per_diobject_pair"):
+
+                if (((x_cat=="per_event") and (x_var!="anomaly_score")) 
+                    or ((y_cat=="per_event") and (y_var!="anomaly_score"))):
+                    raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_event except for anomaly_score")
+                
+                for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+                    for pairing in pairings:
+                        print("Pairing:",pairing)
+                        object_type_1 = pairing[0]
+                        object_type_2 = pairing[1]
+
+                        if x_cat=="per_diobject_pair":
+                            x_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][x_var]
+                        if y_cat=="per_diobject_pair":
+                            y_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][y_var]
+
+                        hist_name=""
+                        if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
+                            hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
+                        if (x_cat=="per_diobject_pair") and (y_cat=="anomaly_score"):
+                            hist_name = f"{object_type_1}_{object_type_2}_{x_var}_anomaly_score"
+                        if (x_cat=="anomaly_score") and (y_cat=="per_diobject_pair"):
+                            hist_name = f"anomaly_score_{object_type_1}_{object_type_2}_{y_var}"
+                        if hist_name!="":
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            
         return hist_dict, branch_save_dict
        
 def initialize_hist_dict(self,hist_dict):
@@ -606,6 +713,82 @@ def initialize_hist_dict(self,hist_dict):
                         obj_1, obj_2 = pairing[0],pairing[1]
                         hist_name = f"{obj_1}_{obj_2}_{histogram}"
                         hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+
+    for entry in self.config["histograms_2d"]:
+        x_cat, x_var = entry["x_category"], entry["x_var"]
+        y_cat, y_var = entry["y_category"], entry["y_var"]
+
+        if (x_cat == "per_diobject_pair") and ((y_cat == "per_object_type") | (y_cat == "per_object")):
+            raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
+        if (y_cat == "per_diobject_pair") and ((x_cat == "per_object_type") | (x_cat == "per_object")):
+            raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
+
+        for reconstruction_level in self.config["objects"]:
+            
+            if (x_cat=="per_event") and (y_cat=="per_event"):
+                hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                continue
+            
+            x_is_object = x_cat in ["per_object_type", "per_object"]
+            y_is_object = x_cat in ["per_object_type", "per_object"]
+                        
+            if x_is_object or y_is_object:
+                for object_type in self.config["objects"][reconstruction_level]:
+
+                    hist_name = ""
+                    if (x_cat=="per_event") and (y_cat=="per_object_type"):
+                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                    elif (x_cat=="per_object_type") and (y_cat=="per_event"):
+                        hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                    elif (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                        hist_name = object_type+"_"+x_var+"_"+object_type+"_"+y_var
+                    if hist_name!="":
+                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                        continue
+                        
+
+                    if (x_cat=="per_object") or (y_cat=="per_object"):
+                        for i in range(self.config["objects_max_i"][object_type]):
+                                
+                            hist_name = ""
+                            if x_cat=="per_object":
+                                if y_cat=="per_event":
+                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                if y_cat=="per_object_type":
+                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                if y_cat=="per_object":
+                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                            if y_cat=="per_object":
+                                if x_cat=="per_event":
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                if x_cat=="per_object_type":
+                                    hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                            if hist_name!="":
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                                continue
+
+        if (x_cat=="per_diobject_pair") or (y_cat=="per_diobject_pair"):
+
+            if (((x_cat=="per_event") and (x_var!="anomaly_score")) 
+                or ((y_cat=="per_event") and (y_var!="anomaly_score"))):
+                raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_event except for anomaly_score")
+                
+            for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+                for pairing in pairings:
+                    object_type_1 = pairing[0]
+                    object_type_2 = pairing[1]
+
+                    hist_name=""
+                    if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
+                        hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
+                    if (x_cat=="per_diobject_pair") and (y_cat=="anomaly_score"):
+                        hist_name = f"{object_type_1}_{object_type_2}_{x_var}_anomaly_score"
+                    if (x_cat=="anomaly_score") and (y_cat=="per_diobject_pair"):
+                        hist_name = f"anomaly_score_{object_type_1}_{object_type_2}_{y_var}"
+                    if hist_name!="":
+                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                        
     return hist_dict
 
 # ###################################################################################################

@@ -1,6 +1,6 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list.json"  # name of json file containing root file paths
+json_filename: "file_list_test.json"  # name of json file containing root file paths
 dataset_name: "2024F_test"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
@@ -10,7 +10,7 @@ n_files: -1                             # number of files to process (-1 for all
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: False                  # create a preprocessing json file
+do_preprocessing: True                  # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -75,6 +75,8 @@ histograms_1d:
     # - "phi"
     
 histograms_2d: 
+# mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
+# for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
     # anomaly score vs diobject mass
     - x_category: "per_event"
       x_var: "anomaly_score"
