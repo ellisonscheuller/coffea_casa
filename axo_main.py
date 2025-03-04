@@ -10,7 +10,6 @@
 # IMPORTS
 
 # library imports
-import awkward as ak
 from collections import defaultdict
 import dask
 from dask.distributed import Client
@@ -18,7 +17,6 @@ import dask_awkward as dak
 import datetime
 import hist
 import json
-import numpy as np
 import time
 import vector
 vector.register_awkward()
