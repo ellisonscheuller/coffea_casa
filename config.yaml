@@ -44,20 +44,20 @@ diobject_pairings: # Which invariant mass pairs to consider
     - ["L1Jet","L1EG"]
     - ["L1Jet","L1Mu"]
     
-    # scouting:
+    scouting:
     - ["ScoutingPFJet","ScoutingPFJet"]
     - ["ScoutingElectron","ScoutingElectron"]
-    - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
     # - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
     per_event: # histograms to make per event
-    # # - "anomaly_score"
+    - "anomaly_score"
     - "ht"
     - "met"
-    # # - "mult"
-    # # - "pt"
+    # - "mult"
+    # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
     # - "ht"
     # - "mult"
@@ -74,10 +74,48 @@ histograms_1d:
     # - "eta"
     # - "phi"
     
-histograms_2d: # not implemented yet TODO: implement
-    - ["anomaly_score","ht"]
-    - ["anomaly_score","met"]
-    - ["anomaly_score",["diobject","m"]]
+histograms_2d: 
+# mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
+# for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
+
+    # anomaly score vs diobject mass
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_diobject_pair"
+      y_var: "mass"
+
+    # anomaly score vs event ht
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "ht"
+
+    # anomaly score vs event MET
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "met"
+
+    # anomaly score vs event mult
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "mult"
+
+    # anomaly score vs object mult
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_object_type"
+      y_var: "mult"
+
+    # anomaly score vs object pt
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_object_type"
+      y_var: "pt"
+
+      
+    
 
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4
