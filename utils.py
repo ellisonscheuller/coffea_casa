@@ -1,269 +1,381 @@
-from cycler import cycler
-from functools import reduce
-import hist
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import numpy as np
-import awkward as ak
-import operator
+from coffea.nanoevents.methods import vector
+from coffea.util import save
+import dask_awkward as dak
+import datetime
+import hist.dask as hda
+import json
+import time
+import yaml
 
-################################################################################################
-
-'''
-draws score thresholds as vertical lines on matplotlib axis "ax" using dictionary threshold_map, 
-which has keys given by threshold names and values which are dicts that provide threshold name
-for printing, threshold value, and color
-'''
-def draw_thresholds(ax, threshold_map):
-    for th in threshold_map.values():
-        ax.axvline(x=th['score'], 
-                   label=th['name'], 
-                   color=th['color'],
-                   linestyle='--',
-                   linewidth=2,
+def create_four_vectors(objects, reconstruction_level):
+    if reconstruction_level == "l1":
+        return dak.zip(
+            {
+                "pt": objects.pt,
+                "eta": objects.eta,
+                "phi": objects.phi,
+                "mass": dak.zeros_like(objects.pt),
+            },
+            with_name="PtEtaPhiMLorentzVector",
+            behavior=vector.behavior,
         )
-      
-    
-'''
-returns hist.Hist object from coffea return dictionary, accessed by keys in order given by items 
-in the list mapList
-mapList example: ['Scouting_2024G', 'hists', 'dimuon_m']
-'''
-def getHist(dataDict, mapList):
-    return reduce(operator.getitem, mapList, dataDict)
-   
-        
-'''
-sets matplotlib color cycle according to colors, a list of string hex values (maintains color 
-order between plots)
-'''
-def setColorCycle(colors = [
-    '#3f90da', '#ffa90e', '#bd1f01', '#94a4a2', '#832db6', 
-    '#a96b59', '#e76300', '#b9ac70', '#717581', '#92dadd'
-]):
-    mpl.rcParams['axes.prop_cycle'] = cycler(color=colors)
-
-'''
-draws 1d histogram from hist.Hist object "hist_in" for trigger "trigger" on mpl axis "ax".
-"label": optional label of errorbar object
-"rebin": rebinning factor for histogram, 1 be default
-"norm": whether to normalize histograms
-'''
-def draw_hist1d(hist_in, ax, trigger, label='', rebin=1, norm=False):
-    hist_in = hist_in[:, trigger, hist.rebin(rebin)] # slice histogram and rebin
-    counts, _, bins = hist_in.to_numpy() # get bin information from hist object
-    
-    if len(counts)>0: # check that there are events to plot
-        _counts = counts[0]/(np.sum(counts[0])*np.diff(bins)) if norm else counts[0]
-        errs = (np.sqrt(counts[0])/(np.sum(counts[0])*np.diff(bins)) 
-                if norm else np.sqrt(counts[0]))
-        _errs = np.where(_counts==0, 0, errs)
-        bin_centres = 0.5*(bins[1:] + bins[:-1])
-        l = ax.errorbar(x=bin_centres,y=_counts,yerr=_errs,linestyle='')
-        color = l[0].get_color()
-        ax.errorbar(x=bins[:-1],y=_counts,drawstyle='steps-post',label=label,color=color)
-        
-    else:        
-        l = ax.errorbar(x=[],y=[],yerr=[],drawstyle='steps-post') # plot nothing
-        color = l[0].get_color()
-        ax.errorbar(x=[],y=[],drawstyle='steps-post',label=label,color=color)
-
-
-        
-'''
-draws 1d histogram from hist.Hist object "hist_in" for trigger "trigger" on matplotlib axis "ax".
-"label": optional label of errorbar object
-"rebin": rebinning factor for histogram, 1 is default
-"obj": if the histogram has an object axis, select this particular object
-"norm": whether to normalize histograms
-'''
-def draw_hist1d(hist_in=None, ax=None, trigger=None, label='', rebin=1, obj=None, norm=False):
-    # slice histogram and rebin
-    # if rebin == None: # rebin automatically according to Terrel-Scott rule
-    #     if obj:
-    #         counts = hist_in.values()[...,trigger,obj].sum()
-    #         nbins = hist_in[...,trigger,obj].size()
-    #     else:
-    #         counts = hist_in.integrate("trigger", trigger).values().sum()
-    #         nbins = hist_in.size
-    #     nbins_new = np.power(2*counts,1/3)
-    #     if nbins_new < nbins:
-    #         rebin = int(nbins/nbins_new)
-    if obj:
+    elif reconstruction_level == "scouting":
         try:
-            hist_in = hist_in[:, trigger, obj, hist.rebin(rebin)] 
-        except:
-            return
+            return dak.zip(
+                {
+                    "pt": objects.pt,
+                    "eta": objects.eta,
+                    "phi": objects.phi,
+                    "mass": objects.mass,
+                },
+                with_name="PtEtaPhiMLorentzVector",
+                behavior=vector.behavior,
+            )
+        except AttributeError:
+            return dak.zip(
+                {
+                    "pt": objects.pt,
+                    "eta": objects.eta,
+                    "phi": objects.phi,
+                    "mass": objects.m,
+                },
+                with_name="PtEtaPhiMLorentzVector",
+                behavior=vector.behavior,
+            )
     else:
-        try:
-            hist_in = hist_in[:, trigger, hist.rebin(rebin)] 
-        except:
-            return
-        
-    counts, _, bins = hist_in.to_numpy() # get bin information from hist object
-    
-    if len(counts)>0: # check that there are events to plot
-        _counts = counts[0]/(np.sum(counts[0])*np.diff(bins)) if norm else counts[0]
-        errs = (np.sqrt(counts[0])/(np.sum(counts[0])*np.diff(bins)) 
-                if norm else np.sqrt(counts[0]))
-        _errs = np.where(_counts==0, 0, errs)
-        bin_centres = 0.5*(bins[1:] + bins[:-1])
-        l = ax.errorbar(x=bin_centres,y=_counts,yerr=_errs,linestyle='')
-        color = l[0].get_color()
-        ax.errorbar(x=bins[:-1],y=_counts,drawstyle='steps-post',label=label,color=color)
-        
-    else:        
-        l = ax.errorbar(x=[],y=[],yerr=[],drawstyle='steps-post') # plot nothing
-        color = l[0].get_color()
-        ax.errorbar(x=[],y=[],drawstyle='steps-post',label=label,color=color)
-    return
-    
-'''
-draws 2d histogram from hist.Hist object "hist_in" for trigger "trigger" on matplotlib axis "ax".
-"x_rebin": rebinning factor for histogram x-axis, 1 is default
-"y_rebin": rebinning factor for histogram y-axis, 1 is default
-"obj": if the histogram has an object axis, select this particular object
-"norm": whether to normalize histograms
-"log": whether z-axis should be log-scale, False is default
-returns array given by pcolormesh method
-'''
-def draw_hist2d(hist_in, ax, trigger, x_var, y_var, x_rebin=1, y_rebin=1, obj=None, norm=False, log=False):
-    if log: norm_method = 'log'
-    else: norm_method = 'linear'
-    
-    cmap = plt.get_cmap('plasma')
+        return dak.zip(
+            {k: getattr(objects, k) for k in ["x", "y", "z", "t"]},
+            with_name="LorentzVector",
+            behavior=objects.behavior,
+        )
 
-    if obj:
-        h = hist_in[:, trigger, obj, hist.rebin(x_rebin), hist.rebin(y_rebin)]
-    else: 
-        h = hist_in[:, trigger, hist.rebin(x_rebin), hist.rebin(y_rebin)]
-        
-    w, x, y = h.project(x_var,y_var).to_numpy()
+def find_diobjects(obj_coll1, obj_coll2, reconstruction_level):
+
+    objs1 = create_four_vectors(obj_coll1, reconstruction_level)
+    objs2 = create_four_vectors(obj_coll2, reconstruction_level)
+
+    # Create all possible pairings between objects from the two collections
+    diObjs = dak.cartesian({"obj1": objs1, "obj2": objs2})
+
+    # Remove self-pairings
+    if obj_coll1 is obj_coll2:
+        same_object_mask = diObjs.obj1.pt != diObjs.obj2.pt
+        diObjs = diObjs[same_object_mask]
     
-    if norm:
-        mesh = ax.pcolormesh(x, y, np.where(w.T==0, np.min(w.T[w.T!=0]), w.T),  cmap=cmap, norm=norm_method)
+    diObj = dak.zip(
+        {
+            "p4": diObjs.obj1 + diObjs.obj2,
+        },
+    )
+    
+    # get other characteristics
+    diObj["obj1_pt"] = diObjs.obj1.pt
+    diObj["obj2_pt"] = diObjs.obj2.pt
+    diObj["obj1_eta"] = diObjs.obj1.eta
+    diObj["obj2_eta"] = diObjs.obj2.eta
+    diObj["obj1_phi"] = diObjs.obj1.phi
+    diObj["obj2_phi"] = diObjs.obj2.phi
+    diObj["pt"] = (diObjs.obj1+diObjs.obj2).pt
+    diObj["eta"] = (diObjs.obj1+diObjs.obj2).eta
+    diObj["phi"] = (diObjs.obj1+diObjs.obj2).phi
+    diObj["mass"] = (diObjs.obj1+diObjs.obj2).mass
+        
+    return diObj
+
+def create_hist_1d(
+    hist_dict, dataset_axis, trigger_axis, observable_axis, hist_name, object_axis=None 
+):
+    """Creates a 1D histogram and adds it to the provided histogram dictionary."""
+
+    if object_axis==None:
+        h = hda.hist.Hist(dataset_axis, trigger_axis, observable_axis, storage="weight", label="nEvents")
     else:
-        mesh = ax.pcolormesh(x, y, w.T, cmap=cmap, norm=norm_method)
+        h = hda.hist.Hist(dataset_axis, trigger_axis, object_axis, observable_axis, storage="weight", label="nEvents")
+        
+    hist_dict[f'{hist_name}'] = h
+    
+    return hist_dict
 
-    return mesh
+def fill_hist_1d(
+    hist_dict, hist_name, dataset, observable, trigger_path, observable_name, object_name=None
+):
+    """Fills a 1D histogram and adds it to the provided histogram dictionary."""
+    
+    kwargs = {
+        observable_name: observable,
+        "dataset": dataset,
+        "trigger": trigger_path
+    }
+    
+    if object_name!=None:
+        kwargs["object"] = object_name
+    
+    hist_dict[f'{hist_name}'].fill(**kwargs)
+    
+    return hist_dict
 
-
-def draw_efficiency(hist_in=None, ax=None, orthogonal_trigger="", trigger="", obj=None, color=None,# color='#5790fc',
-                    label='', rebin=1, norm=False):
-    if obj:
-        try:
-            ortho_hist = hist_in[:, orthogonal_trigger, obj, hist.rebin(rebin)] 
-            int_hist = hist_in[:, trigger, obj, hist.rebin(rebin)] 
-        except:
-            #print("Error reading hist")
-            return
+def create_hist_2d(
+    hist_dict, dataset_axis, trigger_axis, observable1_axis, observable2_axis, hist_name, object_axis = None 
+):
+    """Creates a 2D histogram and adds it to the provided histogram dictionary."""
+    if object_axis==None:
+        h = hda.hist.Hist(dataset_axis, trigger_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
     else:
-        try:
-            ortho_hist = hist_in[:, orthogonal_trigger, hist.rebin(rebin)] 
-            int_hist = hist_in[:, trigger, hist.rebin(rebin)] 
-        except:
-            #print("Error reading hist")
-            return
+        h = hda.hist.Hist(dataset_axis, trigger_axis, object_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
+        
+    hist_dict[f'{hist_name}'] = h
+    
+    return hist_dict
+
+def fill_hist_2d(
+    hist_dict, hist_name, dataset, observable1, observable2, trigger_path, observable1_name, observable2_name, object_name = None
+):
+    """Fills a 2D histogram and adds it to the provided histogram dictionary."""  
+    kwargs = {
+        observable1_name: observable1,
+        observable2_name: observable2,
+        "dataset": dataset,
+        "trigger": trigger_path
+    }
+    
+    if object_name!=None:
+        kwargs["object"] = object_name
+    
+    hist_dict[f'{hist_name}'].fill(**kwargs)
+    
+    return hist_dict
+
+def load_config(config_path="config.yaml"):
+    """Loads YAML configuration."""
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def load_dataset(json_filename, dataset_name, n_files):
+    """Loads JSON dataset and filters files based on n_files limit."""
+    with open(json_filename, 'r') as f:
+        dataset = json.load(f)
+    
+    if n_files == -1:
+        return {dataset_name: {'files': dataset[dataset_name]['files']}}
+
+    # Use dictionary slicing for efficiency
+    return {dataset_name: {'files': dict(list(dataset[dataset_name]['files'].items())[:n_files])}}
+
+def save_histogram(hist_result, dataset_name):
+    """Saves the histogram to a pickle file."""
+    filename = f'hist_result_{dataset_name}_{datetime.date.today().strftime("%Y%m%d")}.pkl'
+    save(hist_result, filename)
+    print(f"Histogram saved as {filename}")
+
+def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
+    assert has_scores, "Error, dataset does not have axol1tl scores"
+    if axo_version == "v4":
+        hist_values = events_trig.axol1tl.score_v4
+    elif axo_version == "v3":
+        hist_values = events_trig.axol1tl.score_v3
+    return hist_values
+
+def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
+    """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
+    level_map = {
+        "l1": {
+            "ht": lambda: dak.flatten(events_trig.L1EtSum.pt[(events_trig.L1EtSum.etSumType == 1) & (events_trig.L1EtSum.bx == 0)]),
+            "met": lambda: dak.flatten(events_trig.L1EtSum.pt[(events_trig.L1EtSum.etSumType == 2) & (events_trig.L1EtSum.bx == 0)]),
+            "mult": lambda: (
+                dak.num(events_trig.L1Jet.bx[events_trig.L1Jet.bx == 0]) +
+                dak.num(events_trig.L1Mu.bx[events_trig.L1Mu.bx == 0]) +
+                dak.num(events_trig.L1EG.bx[events_trig.L1EG.bx == 0])
+            ),
+            "pt": lambda: (
+                dak.sum(events_trig.L1Jet.pt[events_trig.L1Jet.bx == 0], axis=1) +
+                dak.sum(events_trig.L1Mu.pt[events_trig.L1Mu.bx == 0], axis=1) +
+                dak.sum(events_trig.L1EG.pt[events_trig.L1EG.bx == 0], axis=1)
+            ),
+        },
+        "scouting": {
+            "ht": lambda: dak.sum(events_trig.ScoutingPFJet.pt, axis=1),
+            "met": lambda: events_trig.ScoutingMET.pt,
+            "mult": lambda: (
+                dak.num(events_trig.ScoutingPFJet) +
+                dak.num(events_trig.ScoutingElectron) +
+                dak.num(events_trig.ScoutingPhoton) +
+                dak.num(events_trig.ScoutingMuonNoVtx)
+            ),
+            "pt": lambda: (
+                dak.sum(events_trig.ScoutingPFJet.pt, axis=1) +
+                dak.sum(events_trig.ScoutingElectron.pt, axis=1) +
+                dak.sum(events_trig.ScoutingPhoton.pt, axis=1) +
+                dak.sum(events_trig.ScoutingMuonNoVtx.pt, axis=1)
+            ),
+        },
+        "full_reco": {
+            "ht": lambda: dak.sum(events_trig.Jet.pt, axis=1),
+            "met": lambda: events_trig.MET.pt,
+            "mult": lambda: (
+                dak.num(events_trig.Jet) +
+                dak.num(events_trig.Electron) +
+                dak.num(events_trig.Photon) +
+                dak.num(events_trig.Muon)
+            ),
+            "pt": lambda: (
+                dak.sum(events_trig.Jet.pt, axis=1) +
+                dak.sum(events_trig.Electron.pt, axis=1) +
+                dak.sum(events_trig.Photon.pt, axis=1) +
+                dak.sum(events_trig.Muon.pt, axis=1)
+            ),
+        },
+    }
+    
+    return level_map.get(reconstruction_level, {}).get(histogram, None)()
+
+def get_per_object_type_hist_values(objects, histogram):
+    """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
+    level_map = {
+        "ht": lambda: dak.sum(objects.pt,axis=1),
+        "mult": lambda: dak.num(objects),
+        "pt": lambda:  dak.flatten(objects.pt),
+        "eta": lambda:  dak.flatten(objects.eta),
+        "phi": lambda: dak.flatten(objects.phi),
+    }
+    return level_map.get(histogram, {})()
+
+def get_per_object_hist_values(objects, i, histogram):
+    """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
+    level_map = {
+        "pt": lambda:  dak.flatten(objects.pt[:,i:i+1]),
+        "eta": lambda:  dak.flatten(objects.eta[:,i:i+1]),
+        "phi": lambda: dak.flatten(objects.phi[:,i:i+1]),
+    }
+    return level_map.get(histogram, {})()
+
+
+def clean_objects(objects, cuts, reconstruction_level=None):
+
+    if reconstruction_level == "l1":
+        objects = objects[objects.bx==0] # Filter for bunch crossing == 0 
+
+    # Find the first valid branch to initialize the mask
+    reference_branch = next((br for br in cuts if hasattr(objects, br)), None)
+    if reference_branch is None:
+        return objects  # No valid branches exist, return unmodified
+
+    # Initialize mask with all values set to True
+    mask = dak.ones_like(getattr(objects, reference_branch), dtype=bool)
+
+    for br, cut in cuts.items():
+        if cut and hasattr(objects, br):  # Ensure branch exists in objects
+            lower_cut = cut[0] if cut[0] is not None else float('-inf')
+            upper_cut = cut[1] if cut[1] is not None else float('inf')
+
+            # Apply cuts to the mask
+            mask = mask & (getattr(objects, br) > lower_cut) & (getattr(objects, br) < upper_cut)
+
+    return objects[mask]
+
+def get_required_observables(self):
+
+    required_observables = {
+        "per_event": set(),
+        "per_object_type": set(),
+        "per_object": set(),
+        "per_diobject_pair": set()
+    }
+
+    # get 1d histogram observables
+    for category, hist_list in self.config.get("histograms_1d", {}).items():
+        required_observables[category].update(hist_list)
+
+    # get 2d histogram observables
+    for entry in self.config.get("histograms_2d", []):
+        x_cat, x_var = entry["x_category"], entry["x_var"]
+        y_cat, y_var = entry["y_category"], entry["y_var"]
+
+        required_observables[x_cat].add(x_var)
+        required_observables[y_cat].add(y_var)
+
+    return required_observables
+
+def calculate_observables(self, observables, events):
+
+    observable_dict = {
+        "per_event": {},
+        "per_object_type": {},
+        "per_object": {},
+        "per_diobject_pair": {},
+    }
+
+    # calculate per-event observables
+    if "anomaly_score" in observables["per_event"]:
+        observable_dict["per_event"]["anomaly_score"] = get_anomaly_score_hist_values(
+            self.has_scores, 
+            self.axo_version, 
+            events
+        )
+    for observable in observables["per_event"]:
+        if observable!="anomaly_score":
+            for reconstruction_level in self.config["objects"]:
+                if reconstruction_level not in observable_dict["per_event"].keys():
+                    observable_dict["per_event"][reconstruction_level] = {}
+                observable_dict["per_event"][reconstruction_level][observable] = get_per_event_hist_values(
+                    reconstruction_level, 
+                    observable, 
+                    events
+                )
+
+    # calculate per-object-type and per-object observables
+    for reconstruction_level, object_types in self.config["objects"].items(): 
+        if reconstruction_level not in observable_dict["per_object_type"].keys():
+            observable_dict["per_object_type"][reconstruction_level] = {}
+
+        if reconstruction_level not in observable_dict["per_object"].keys():
+            observable_dict["per_object"][reconstruction_level] = {}
+        
+        for object_type in object_types:
+            if object_type not in observable_dict["per_object_type"][reconstruction_level].keys():
+                observable_dict["per_object_type"][reconstruction_level][object_type] = {}
+
+            if object_type not in observable_dict["per_object"][reconstruction_level].keys():
+                observable_dict["per_object"][reconstruction_level][object_type] = {}
+                        
+            # Get objects and apply object level cleaning
+            objects = getattr(events, object_type)
+            objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
             
-    ortho_counts, _, ortho_bins = ortho_hist.to_numpy()
-    trig_counts, _, trig_bins = int_hist.to_numpy()
-    #print(ortho_counts[0])
-        
-    # Calculating efficiency
-    eff = (trig_counts[0] / np.where(ortho_counts[0] == 0, np.nan, ortho_counts[0])) * 100
-    #eff = np.nan_to_num(eff, nan=0).flatten()
-    
-    x = 0.5*(trig_bins[0:-1] + trig_bins[1:])
+            for observable in observables["per_object_type"]:
+                observable_dict["per_object_type"][reconstruction_level][object_type][observable] = get_per_object_type_hist_values(
+                    objects, 
+                    observable
+                )
 
-    # Error bars
-    #f = trig_counts[0] / ortho_counts
-    f = trig_counts[0] / np.where(ortho_counts == 0, np.nan, ortho_counts)
-    sig_trig = np.sqrt(trig_counts[0])
-    sig_ortho = np.sqrt(ortho_counts[0])
-    a =  sig_trig/np.where(trig_counts[0] == 0, np.nan,trig_counts[0])
-    b =  sig_ortho/np.where(ortho_counts[0] == 0, np.nan,ortho_counts[0])
-    error = (f*np.sqrt((a)**2 + (b)**2)) * 100
-    #lower_error = error[0].flatten()
-    lower_error = np.where(eff - error[0] < 0, eff, error)
-    lower_error = lower_error.flatten()
-    upper_error = np.where(eff + error[0] >= 100, 100-eff, error)
-    upper_error = upper_error[0].flatten() 
-    capped_error = np.array([lower_error,upper_error])
+            for observable in observables["per_object"]:
+                for i in range(self.config["objects_max_i"][object_type]):
+                    observable_dict["per_object"][reconstruction_level][object_type][f"{observable}_{i}"] = get_per_object_hist_values(
+                        objects, 
+                        i, 
+                        observable)
 
-    # Plotting it
-    l = ax.errorbar(x=x, y=eff, yerr=capped_error, 
-                    capsize=0, linestyle='', marker=".",color=color)
-    color = l[0].get_color()
-    ax.errorbar(x=x, y=eff, label=label, color=color) 
-    
-    return l
+        # calculate per-diobject-pair observables
+        for reconstruction_level, pairings in self.config["diobject_pairings"].items():
+            if reconstruction_level not in observable_dict["per_diobject_pair"].keys():
+                observable_dict["per_diobject_pair"][reconstruction_level] = {}
 
-def draw_efficiency_ratios(hist_in=None, ax=None, orthogonal_trigger="", triggers=[], obj=None, color=None,# color='#5790fc',
-                    labels='', rebin=1, norm=False):
-    if obj:
-        try:
-            ortho_hist = hist_in[:, orthogonal_trigger, obj, hist.rebin(rebin)] 
-            int_hist_1 = hist_in[:, triggers[0], obj, hist.rebin(rebin)] 
-            int_hist_2 = hist_in[:, triggers[1], obj, hist.rebin(rebin)] 
-        except:
-            print("Error reading hist")
-            
-            return
-    else:
-        try:
-            ortho_hist = hist_in[:, orthogonal_trigger, hist.rebin(rebin)] 
-            int_hist_1 = hist_in[:, triggers[0], hist.rebin(rebin)]
-            int_hist_2 = hist_in[:, triggers[1], hist.rebin(rebin)]
-        except:
-            print("Error reading hist")
-            print(triggers[0],triggers[1])
-            return
-            
-    ortho_counts, _, ortho_bins = ortho_hist.to_numpy()
-    trig_1_counts, _, trig_1_bins = int_hist_1.to_numpy()
-    trig_2_counts, _, trig_2_bins = int_hist_2.to_numpy()
-    #print(ortho_counts[0])
-        
-    # Calculating efficiency
-    eff_1 = (trig_1_counts[0] / np.where(ortho_counts[0] == 0, np.nan, ortho_counts[0])) * 100
-    eff_2 = (trig_2_counts[0] / np.where(ortho_counts[0] == 0, np.nan, ortho_counts[0])) * 100
-
-    
-    eff = eff_1/eff_2*100.0
-    
-    x = 0.5*(trig_1_bins[0:-1] + trig_1_bins[1:])
-
-    # Error bars
-    #f = trig_counts[0] / ortho_counts
-    # f = trig_counts[0] / np.where(ortho_counts == 0, np.nan, ortho_counts)
-    # sig_trig = np.sqrt(trig_counts[0])
-    # sig_ortho = np.sqrt(ortho_counts[0])
-    # a =  sig_trig/np.where(trig_counts[0] == 0, np.nan,trig_counts[0])
-    # b =  sig_ortho/np.where(ortho_counts[0] == 0, np.nan,ortho_counts[0])
-    # error = (f*np.sqrt((a)**2 + (b)**2)) * 100
-    # #lower_error = error[0].flatten()
-    # lower_error = np.where(eff - error[0] < 0, eff, error)
-    # lower_error = lower_error.flatten()
-    # upper_error = np.where(eff + error[0] >= 100, 100-eff, error)
-    # upper_error = upper_error[0].flatten() 
-    # capped_error = np.array([lower_error,upper_error])
-
-    # Plotting it
-    l = ax.errorbar(x=x, y=eff, #yerr=capped_error, 
-                    capsize=0, linestyle='', marker=".",color=color)
-    color = l[0].get_color()
-    ax.errorbar(x=x, y=eff, label=f"{labels[0]}/{labels[1]}", color=color) 
-    
-    return l
-
-
-def multipage(filename, figs=None, dpi=200):
-    """Creates a pdf with one page per plot"""
-    pp = PdfPages(filename)
-    if figs is None:
-        figs = [plt.figure(n) for n in plt.get_fignums()]
-        print("No figures handed")
-    for fig in figs:
-        plt.figure(fig).savefig(pp, format='pdf')
-    pp.close()
-
+            for pairing in pairings:
+                object_type_1 = pairing[0]
+                object_type_2 = pairing[1]
+                if f"{object_type_1}_{object_type_2}" not in observable_dict["per_diobject_pair"][reconstruction_level].keys():
+                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"] = {}
+                if object_type_1 == object_type_2: # same object
+                    objects = getattr(events, object_type_1)
+                    objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
+                    di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
+                else:
+                    objects_1 = getattr(events, object_type_1)
+                    objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
+                    objects_2 = getattr(events, object_type_2)
+                    objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
+                    di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
+                        
+                for observable in observables["per_diobject_pair"]:
+                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
+                        
+    return observable_dict
