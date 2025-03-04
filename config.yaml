@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list_test.json"  # name of json file containing root file paths
-dataset_name: "2024F_test"            # name of key within json containing dataset
+json_filename: "file_list.json"  # name of json file containing root file paths
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -44,10 +44,10 @@ diobject_pairings: # Which invariant mass pairs to consider
     - ["L1Jet","L1EG"]
     - ["L1Jet","L1Mu"]
     
-    # scouting:
-    - ["ScoutingJet","ScoutingJet"]
-    # - ["ScoutingElectron","ScoutingElectron"]
-    # - ["ScoutingMuonVtx","ScoutingMuonVtx"] # TODO failing when not filled
+    scouting:
+    - ["ScoutingPFJet","ScoutingPFJet"]
+    - ["ScoutingElectron","ScoutingElectron"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
     # - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
@@ -56,20 +56,20 @@ histograms_1d:
     - "anomaly_score"
     - "ht"
     - "met"
-    - "mult"
-    - "pt"
-    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    - "ht"
+    # - "mult"
+    # - "pt"
+    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    # - "ht"
     # - "mult"
     # - "pt"
     # - "eta"
     # - "phi"
-    per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
-    - "pt"
+    # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
+    # - "pt"
     # - "eta"
     # - "phi"
-    per_diobject_pair:
-    - "mass"
+    # per_diobject_pair:
+    # - "mass"
     # - "pt"
     # - "eta"
     # - "phi"
@@ -77,41 +77,42 @@ histograms_1d:
 histograms_2d: 
 # mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
 # for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
+
     # anomaly score vs diobject mass
     - x_category: "per_event"
       x_var: "anomaly_score"
       y_category: "per_diobject_pair"
       y_var: "mass"
 
-    # # anomaly score vs event ht
-    # - x_category: "per_event"
-    #   x_var: "anomaly_score"
-    #   y_category: "per_event"
-    #   y_var: "ht"
+    # anomaly score vs event ht
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "ht"
 
-    # # anomaly score vs event MET
-    # - x_category: "per_event"
-    #   x_var: "anomaly_score"
-    #   y_category: "per_event"
-    #   y_var: "met"
+    # anomaly score vs event MET
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "met"
 
-    # # anomaly score vs event mult
-    # - x_category: "per_event"
-    #   x_var: "anomaly_score"
-    #   y_category: "per_event"
-    #   y_var: "mult"
+    # anomaly score vs event mult
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_event"
+      y_var: "mult"
 
-    # # anomaly score vs object mult
-    # - x_category: "per_event"
-    #   x_var: "anomaly_score"
-    #   y_category: "per_object_type"
-    #   y_var: "mult"
+    # anomaly score vs object mult
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_object_type"
+      y_var: "mult"
 
-    # # anomaly score vs object pt
-    # - x_category: "per_event"
-    #   x_var: "anomaly_score"
-    #   y_category: "per_object_type"
-    #   y_var: "pt"
+    # anomaly score vs object pt
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_object_type"
+      y_var: "pt"
 
       
     
@@ -152,7 +153,7 @@ orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
-    "ScoutingJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
+    "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
         pt: [20.0, null] # GeV
         eta: [-2.4, 2.4]
     "ScoutingElectron": # 
