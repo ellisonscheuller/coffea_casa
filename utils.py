@@ -282,11 +282,13 @@ def get_required_observables(self):
     }
 
     # get 1d histogram observables
-    for category, hist_list in self.config.get("histograms_1d", {}).items():
-        required_observables[category].update(hist_list)
+    for category, hist_list in self.config.get("histograms_1d", {}).items() \
+        if self.config["histograms_1d"] else []:
+        if hist_list:
+            required_observables[category].update(hist_list)
 
     # get 2d histogram observables
-    for entry in self.config.get("histograms_2d", []):
+    for entry in self.config.get("histograms_2d", []) if self.config["histograms_2d"] else []:
         x_cat, x_var = entry["x_category"], entry["x_var"]
         y_cat, y_var = entry["y_category"], entry["y_var"]
 
@@ -313,7 +315,7 @@ def calculate_observables(self, observables, events):
         )
     for observable in observables["per_event"]:
         if observable!="anomaly_score":
-            for reconstruction_level in self.config["objects"]:
+            for reconstruction_level in self.config["objects"] if self.config["objects"] else []:
                 if reconstruction_level not in observable_dict["per_event"].keys():
                     observable_dict["per_event"][reconstruction_level] = {}
                 observable_dict["per_event"][reconstruction_level][observable] = get_per_event_hist_values(
@@ -323,14 +325,15 @@ def calculate_observables(self, observables, events):
                 )
 
     # calculate per-object-type and per-object observables
-    for reconstruction_level, object_types in self.config["objects"].items(): 
+    for reconstruction_level, object_types in self.config["objects"].items() \
+        if self.config["objects"] else []: 
         if reconstruction_level not in observable_dict["per_object_type"].keys():
             observable_dict["per_object_type"][reconstruction_level] = {}
 
         if reconstruction_level not in observable_dict["per_object"].keys():
             observable_dict["per_object"][reconstruction_level] = {}
         
-        for object_type in object_types:
+        for object_type in object_types if object_types else []:
             if object_type not in observable_dict["per_object_type"][reconstruction_level].keys():
                 observable_dict["per_object_type"][reconstruction_level][object_type] = {}
 
@@ -354,28 +357,29 @@ def calculate_observables(self, observables, events):
                         i, 
                         observable)
 
-        # calculate per-diobject-pair observables
-        for reconstruction_level, pairings in self.config["diobject_pairings"].items():
-            if reconstruction_level not in observable_dict["per_diobject_pair"].keys():
-                observable_dict["per_diobject_pair"][reconstruction_level] = {}
+    # calculate per-diobject-pair observables
+    for reconstruction_level, pairings in self.config["diobject_pairings"].items() \
+        if self.config["diobject_pairings"] else []:
+        if reconstruction_level not in observable_dict["per_diobject_pair"].keys():
+            observable_dict["per_diobject_pair"][reconstruction_level] = {}
 
-            for pairing in pairings:
-                object_type_1 = pairing[0]
-                object_type_2 = pairing[1]
-                if f"{object_type_1}_{object_type_2}" not in observable_dict["per_diobject_pair"][reconstruction_level].keys():
-                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"] = {}
-                if object_type_1 == object_type_2: # same object
-                    objects = getattr(events, object_type_1)
-                    objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
-                    di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
-                else:
-                    objects_1 = getattr(events, object_type_1)
-                    objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
-                    objects_2 = getattr(events, object_type_2)
-                    objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
-                    di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
-                        
-                for observable in observables["per_diobject_pair"]:
-                    observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
+        for pairing in pairings if pairings else []:
+            object_type_1 = pairing[0]
+            object_type_2 = pairing[1]
+            if f"{object_type_1}_{object_type_2}" not in observable_dict["per_diobject_pair"][reconstruction_level].keys():
+                observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"] = {}
+            if object_type_1 == object_type_2: # same object
+                objects = getattr(events, object_type_1)
+                objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
+                di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
+            else:
+                objects_1 = getattr(events, object_type_1)
+                objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
+                objects_2 = getattr(events, object_type_2)
+                objects_2 = clean_objects(objects_2, self.config["object_cleaning"][object_type_2])
+                di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
+                    
+            for observable in observables["per_diobject_pair"]:
+                observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
                         
     return observable_dict
