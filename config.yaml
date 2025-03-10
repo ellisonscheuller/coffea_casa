@@ -79,7 +79,10 @@ histograms_2d:
 # for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
 
     # anomaly score vs diobject mass
-    - x_category:
+    - x_category: "per_event"
+      x_var: "anomaly_score"
+      y_category: "per_diobject_pair"
+      y_var: "mass"
 
     # anomaly score vs event ht
     # - x_category: "per_event"
