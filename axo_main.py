@@ -105,11 +105,11 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
         observable_calculations = calculate_observables(self, required_observables, events_trig)
 
         # fill 1d histograms
-        for histogram_group, histograms in self.config["histograms_1d"].items():
+        for histogram_group, histograms in self.config["histograms_1d"].items() if self.config["histograms_1d"] else []:
             print("Histogram group: ", histogram_group)
-            
+                
             if histogram_group == "per_event": # event level histograms
-                for histogram in histograms:
+                for histogram in histograms if histograms else []:
                     print("Histogram type: ",histogram)
                     if histogram == "anomaly_score":
                         fill_hist_1d(
@@ -121,7 +121,8 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                             histogram
                         )
                     else: 
-                        for reconstruction_level in self.config["objects"]:
+                        for reconstruction_level in self.config["objects"] \
+                            if self.config["objects"] else []:
                             print("Reconstruction level: ",reconstruction_level)
                             fill_hist_1d(
                                 hist_dict, 
@@ -131,9 +132,10 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 trigger_path, 
                                 histogram
                             )
-                            
+                                
             if histogram_group == "per_object_type" or histogram_group == "per_object": # object level histograms 
-                for reconstruction_level, object_types in self.config["objects"].items(): 
+                for reconstruction_level, object_types in self.config["objects"].items() \
+                    if self.config["objects"] else []: 
                     for object_type in object_types:
                         print("Object type:",object_type)
                         for histogram in histograms:
@@ -159,7 +161,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                         trigger_path, 
                                         histogram
                                     )
-                                    
+                                        
             elif histogram_group == "per_diobject_pair": # di-object masses etc 
                 for reconstruction_level, pairings in self.config["diobject_pairings"].items():
                     for pairing in pairings:
@@ -180,7 +182,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram]
 
         # fill 2d histograms
-        for entry in self.config["histograms_2d"]:
+        for entry in self.config["histograms_2d"] if self.config["histograms_2d"] else []:
             x_cat, x_var = entry["x_category"], entry["x_var"]
             y_cat, y_var = entry["y_category"], entry["y_var"]
             print("2D Histogram: ", x_cat, "-", x_var, ", ", y_cat, "-", y_var)
@@ -190,7 +192,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
             if (y_cat == "per_diobject_pair") and ((x_cat == "per_object_type") | (x_cat == "per_object")):
                 raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
 
-            for reconstruction_level in self.config["objects"]:
+            for reconstruction_level in self.config["objects"] if self.config["objects"] else []:
                 if x_cat=="per_event": 
                     if x_var == "anomaly_score":
                         x_obs = observable_calculations["per_event"]["anomaly_score"]
@@ -271,7 +273,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                     raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_event except for anomaly_score")
                 
                 for reconstruction_level, pairings in self.config["diobject_pairings"].items():
-                    for pairing in pairings:
+                    for pairing in pairings if pairings else []:
                         print("Pairing:",pairing)
                         object_type_1 = pairing[0]
                         object_type_2 = pairing[1]
@@ -309,13 +311,15 @@ def initialize_hist_dict(self,hist_dict):
         'minv_mid': self.minv_axis_mid,
         'mass': self.mass_axis
     }
-    for histogram_group, histograms in self.config["histograms_1d"].items():  # Process each histogram according to its group
-        for histogram in histograms: # Variables to plot
+    for histogram_group, histograms in self.config["histograms_1d"].items() \
+        if self.config["histograms_1d"] else []:  # Process each histogram according to its group
+        for histogram in histograms if histograms else []: # Variables to plot
             if histogram == "anomaly_score": # Score doesn't depend on reco level
                 hist_name = f"{histogram}"  
                 hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
                 continue
-            for reconstruction_level in self.config["objects"]: # Loop over different object reconstruction levels
+            for reconstruction_level in self.config["objects"] \
+                if self.config["objects"] else []: # Loop over different object reconstruction levels
                 if histogram_group == "per_event" and histogram != "anomaly_score": # Per event ---
                     hist_name = f"{reconstruction_level}_{histogram}"
                     hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
@@ -329,13 +333,16 @@ def initialize_hist_dict(self,hist_dict):
                             hist_name = f"{obj}_{i}_{histogram}"
                             hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
             if histogram_group == "per_diobject_pair":  # Di-object pairs ---
-                for reconstruction_level in self.config["diobject_pairings"]:
-                    for pairing in self.config["diobject_pairings"][reconstruction_level]:
+                for reconstruction_level in self.config["diobject_pairings"] \
+                    if self.config["diobject_pairings"] else []:
+                    for pairing in self.config["diobject_pairings"][reconstruction_level] \
+                        if self.config["diobject_pairings"][reconstruction_level] else []:
                         obj_1, obj_2 = pairing[0],pairing[1]
                         hist_name = f"{obj_1}_{obj_2}_{histogram}"
                         hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
 
-    for entry in self.config["histograms_2d"]:
+    for entry in self.config["histograms_2d"] \
+        if self.config.get("histograms_2d") else []:
         x_cat, x_var = entry["x_category"], entry["x_var"]
         y_cat, y_var = entry["y_category"], entry["y_var"]
 
@@ -395,8 +402,9 @@ def initialize_hist_dict(self,hist_dict):
                 or ((y_cat=="per_event") and (y_var!="anomaly_score"))):
                 raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_event except for anomaly_score")
                 
-            for reconstruction_level, pairings in self.config["diobject_pairings"].items():
-                for pairing in pairings:
+            for reconstruction_level, pairings in self.config["diobject_pairings"].items() \
+                if self.config["diobject_pairings"] else []:
+                for pairing in pairings if pairings else []:
                     object_type_1 = pairing[0]
                     object_type_2 = pairing[1]
 
@@ -487,8 +495,8 @@ class MakeAXOHists (processor.ProcessorABC):
         branch_save_dict = {}
                
         # Check that the objects you want to run on match the available fields in the data
-        for object_type in self.config["objects"]:
-            for my_object in self.config["objects"][object_type]:
+        for object_type in self.config["objects"] if self.config["objects"] else []:
+            for my_object in self.config["objects"][object_type] if self.config["objects"][object_type] else []:
                 assert my_object in events.fields, f"Error: {my_object} not in available fields: {events.fields}" 
                 
         # Check that the triggers you have requested are available in the data
@@ -534,7 +542,7 @@ class MakeAXOHists (processor.ProcessorABC):
                                             
                 if self.config["save_branches"]: 
                     dak_zip = dak.zip(branch_save_dict)
-                    dak_zip.persist().to_parquet(self.config["branch_writing_path"] + "axo_branches")
+                    dak_zip.persist().to_parquet(self.config["branch_writing_path"] + f"axo_branches_{trigger_path}")
 
         
         if self.config["module"] == "efficiency":
@@ -551,36 +559,40 @@ class MakeAXOHists (processor.ProcessorABC):
 
             new_trigger_paths = []
             for trigger_path in self.trigger_paths: # loop over trigger paths
-                    print(trigger_path)
-                    events_trig = None
-                        
-                    # select events for current trigger
-                    if trigger_path == "all_available_triggers":
-                        print("all_available_triggers")
-                        events_trig = events_ortho
-                    elif trigger_path == "all_l1_triggers":
-                        events_br = getattr(events_ortho, "L1")
-                        events_l1_selection = dak.zeros_like(getattr(events_br,"ZeroBias"))
-                        fields = [f for f in events_ortho.L1.fields if not ("CICADA" in f or "AXO" in f or "ZeroBias" in f)]
-                        #print(fields)
-                        for i in fields:
-                            events_l1_selection = dak.where(getattr(events_ortho.L1,i)==1, 1, events_l1_selection) # if triggered by a different bit set to 0
-                        events_l1_selection_bool = dak.values_astype(events_l1_selection,bool)
-                        events_trig = events_ortho[events_l1_selection_bool]
+                print(trigger_path)
+                events_trig = None
+                    
+                # select events for current trigger
+                if trigger_path == "all_available_triggers":
+                    print("all_available_triggers")
+                    events_trig = events_ortho
+                elif trigger_path == "all_l1_triggers":
+                    events_br = getattr(events_ortho, "L1")
+                    events_l1_selection = dak.zeros_like(getattr(events_br,"ZeroBias"))
+                    fields = [f for f in events_ortho.L1.fields if not ("CICADA" in f or "AXO" in f or "ZeroBias" in f)]
+                    #print(fields)
+                    for i in fields:
+                        events_l1_selection = dak.where(getattr(events_ortho.L1,i)==1, 1, events_l1_selection) # if triggered by a different bit set to 0
+                    events_l1_selection_bool = dak.values_astype(events_l1_selection,bool)
+                    events_trig = events_ortho[events_l1_selection_bool]
 
-                    else: # select events passing the orthogonal dataset and the trigger of interest
-                        trig_br = getattr(events_ortho,trigger_path.split('_')[0])
-                        trig_path = '_'.join(trigger_path.split('_')[1:])
-                        events_trig = events_ortho[getattr(trig_br,trig_path)] 
+                else: # select events passing the orthogonal dataset and the trigger of interest
+                    trig_br = getattr(events_ortho,trigger_path.split('_')[0])
+                    trig_path = '_'.join(trigger_path.split('_')[1:])
+                    events_trig = events_ortho[getattr(trig_br,trig_path)] 
 
-                    new_trigger_path = f"{ortho_trig}_{trigger_path}"
-                    new_trigger_paths += [new_trigger_path]
-        
-                    # save cutflow information for the trigger of interest
-                    cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
+                new_trigger_path = f"{ortho_trig}_{trigger_path}"
+                new_trigger_paths += [new_trigger_path]
+    
+                # save cutflow information for the trigger of interest
+                cutflow[new_trigger_path] = dak.num(events_trig.event, axis=0)
 
-                    # run over all objects specified in the configuration file
-                    hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,new_trigger_path)
+                # run over all objects specified in the configuration file
+                hist_dict, branch_save_dict = run_the_megaloop(self, events_trig, hist_dict, branch_save_dict,dataset,new_trigger_path)
+
+                if self.config["save_branches"]: 
+                    dak_zip = dak.zip(branch_save_dict)
+                    dak_zip.persist().to_parquet(self.config["branch_writing_path"] + f"/axo_branches_{new_trigger_path}")
                 
             self.trigger_paths += new_trigger_paths 
             if ortho_trig not in self.trigger_paths:
