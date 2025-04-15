@@ -58,10 +58,6 @@ def create_four_vectors(objects, reconstruction_level):
             behavior=objects.behavior,
         )
 
-def compute_deltaPhi(phi1, phi2):
-    dphi = phi1 - phi2
-    return (dphi + np.pi) % (2 * np.pi) - np.pi
-
 def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=False):
 
     if opposite_charge:
@@ -93,11 +89,6 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
         },
     )
 
-    # Compute deltaR
-    delta_phi = compute_deltaPhi(diObjs.obj1.phi, diObjs.obj2.phi)
-    delta_eta = diObjs.obj1.eta - diObjs.obj2.eta
-    delta_R = np.sqrt(delta_phi**2 + delta_eta**2)
-
     # get other characteristics
     diObj["obj1_pt"] = diObjs.obj1.pt
     diObj["obj2_pt"] = diObjs.obj2.pt
@@ -109,7 +100,7 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
     diObj["eta"] = (diObjs.obj1+diObjs.obj2).eta
     diObj["phi"] = (diObjs.obj1+diObjs.obj2).phi
     diObj["mass"] = (diObjs.obj1+diObjs.obj2).mass
-    diObj["deltaR"] = delta_R
+    diObj["deltaR"] = diObjs.obj1.deltaR(diObjs.obj2)
         
     return diObj
 
