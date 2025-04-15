@@ -2,7 +2,8 @@ cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
 normalized :  False #True #
 log_scale : True #False
 
-module : "purity"
+module : "efficiency"
+#module : "default"
 
 dataset_titles:
     '2024F': '2024F'
@@ -88,6 +89,8 @@ object_level:
        - 'Muon'
 
 rebin:
+    "l1_ht" : 6
+    "l1_met" : 2
     "L1Jet_L1Jet_mass" : 10
     "L1Mu_L1Mu_mass" : 2
     "L1EG_L1EG_mass" : 2
@@ -97,4 +100,5 @@ rebin:
     "ScoutingPFJet_ScoutingPFJet_mass" : 10
     "ScoutingElectron_ScoutingElectron_mass" : 2
     "ScoutingMuonVtx_ScoutingMuonVtx_mass" : 2
+    
 

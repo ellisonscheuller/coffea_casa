@@ -39,16 +39,17 @@ objects:
 diobject_pairings: # Which invariant mass pairs to consider
     l1:
     - ["L1Jet","L1Jet"]
-    - ["L1EG","L1EG"]
-    - ["L1Mu","L1Mu"]
-    - ["L1Jet","L1EG"]
-    - ["L1Jet","L1Mu"]
+    # - ["L1EG","L1EG"]
+    # - ["L1Mu","L1Mu"]
+    # - ["L1Jet","L1EG"]
+    # - ["L1Jet","L1Mu"]
     
     scouting:
     - ["ScoutingPFJet","ScoutingPFJet"]
     - ["ScoutingElectron","ScoutingElectron"]
     - ["ScoutingMuonVtx","ScoutingMuonVtx"]
     - ["ScoutingElectron", "ScoutingMuonVtx"]
+
     
 # Histograms to make ---------------------------------------
 histograms_1d:
@@ -74,6 +75,7 @@ histograms_1d:
     # - "eta"
     # - "phi"
     
+<<<<<<< HEAD
 histograms_2d: 
 # mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
 # for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
@@ -122,6 +124,12 @@ histograms_2d:
 
       
     
+=======
+# histograms_2d: # 
+#     - ["anomaly_score","ht"]
+#     - ["anomaly_score","met"]
+#     - ["anomaly_score",["diobject","m"]]
+>>>>>>> ed4ae42 (Updated with thresholds config and binomial errors)
 
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4
@@ -139,7 +147,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    - 'all_available_triggers'
+    # - 'all_available_triggers'
     # - 'all_l1_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
