@@ -158,32 +158,34 @@ def draw_efficiency(hist_in=None, ax=None, orthogonal_trigger="", trigger="", ob
             #print("Error reading hist")
             return
     else:
+
         try:
             ortho_hist = hist_in[:, orthogonal_trigger, hist.rebin(rebin)] 
             int_hist = hist_in[:, trigger, hist.rebin(rebin)] 
+
+            # Automatic rebinning 
+            # n = ortho_hist.sum().value # number of entries in hist  
+            # n_sturges_bins = int(np.ceil(np.log2(n) + 1))
+            # current_n_bins = ortho_hist.shape[1]
+            # rebin = int(current_n_bins/n_sturges_bins) 
+            # print(rebin)
+
+            # ortho_hist = hist_in[:, orthogonal_trigger, hist.rebin(rebin)] 
+            # int_hist = hist_in[:, trigger, hist.rebin(rebin)] 
+            
         except:
-            #print("Error reading hist")
+            print("Error reading hist")
             return
             
     ortho_counts, _, ortho_bins = ortho_hist.to_numpy()
     trig_counts, _, trig_bins = int_hist.to_numpy()
-    #print(ortho_counts[0])
-        
+
     # Calculating efficiency
-    eff = (trig_counts[0] / np.where(ortho_counts[0] == 0, np.nan, ortho_counts[0])) * 100
-    #eff = np.nan_to_num(eff, nan=0).flatten()
-    
+    eff = (trig_counts[0] / np.where(ortho_counts[0] == 0, np.nan, ortho_counts[0])) * 100.0
     x = 0.5*(trig_bins[0:-1] + trig_bins[1:])
 
     # Error bars
-    #f = trig_counts[0] / ortho_counts
-    f = trig_counts[0] / np.where(ortho_counts == 0, np.nan, ortho_counts)
-    sig_trig = np.sqrt(trig_counts[0])
-    sig_ortho = np.sqrt(ortho_counts[0])
-    a =  sig_trig/np.where(trig_counts[0] == 0, np.nan,trig_counts[0])
-    b =  sig_ortho/np.where(ortho_counts[0] == 0, np.nan,ortho_counts[0])
-    error = (f*np.sqrt((a)**2 + (b)**2)) * 100
-    #lower_error = error[0].flatten()
+    error = np.sqrt(eff/100 * (1 - eff/100) /  np.where(ortho_counts == 0, np.nan, ortho_counts) )*100 # Binomial errors
     lower_error = np.where(eff - error[0] < 0, eff, error)
     lower_error = lower_error.flatten()
     upper_error = np.where(eff + error[0] >= 100, 100-eff, error)
@@ -195,7 +197,9 @@ def draw_efficiency(hist_in=None, ax=None, orthogonal_trigger="", trigger="", ob
                     capsize=0, linestyle='', marker=".",color=color)
     color = l[0].get_color()
     ax.errorbar(x=x, y=eff, label=label, color=color) 
-    
+
+
+
     return l
 
 def draw_efficiency_ratios(hist_in=None, ax=None, orthogonal_trigger="", triggers=[], obj=None, color=None,# color='#5790fc',

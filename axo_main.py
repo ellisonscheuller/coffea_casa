@@ -497,7 +497,7 @@ class MakeAXOHists (processor.ProcessorABC):
             30, -4, 4, name="phi", label=r"$\phi$"
         )
         self.met_axis = hist.axis.Regular(
-            250, 0, 2500, name="met", label=r"$p^{miss}_{T} [GeV]$"
+            100, 0, 1000, name="met", label=r"$p^{miss}_{T} [GeV]$"
         )
         self.ht_axis = hist.axis.Regular(
             200, 0, 4000, name="ht", label=r"$H_{T}$ [GeV]"

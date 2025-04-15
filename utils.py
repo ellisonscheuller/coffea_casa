@@ -1,3 +1,4 @@
+
 from coffea.nanoevents.methods import vector
 from coffea.util import save
 import dask_awkward as dak
@@ -6,6 +7,14 @@ import hist.dask as hda
 import json
 import time
 import yaml
+from cycler import cycler
+from functools import reduce
+import boost_histogram as hist
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import awkward as ak
+import operator
 
 def create_four_vectors(objects, reconstruction_level):
     if reconstruction_level == "l1":
@@ -133,6 +142,7 @@ def create_hist_2d(
     if object_axis==None:
         h = hda.hist.Hist(dataset_axis, trigger_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
     else:
+<<<<<<< HEAD
         h = hda.hist.Hist(dataset_axis, trigger_axis, object_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
         
     hist_dict[f'{hist_name}'] = h
@@ -374,7 +384,6 @@ def calculate_observables(self, observables, events):
         if self.config["diobject_pairings"] else []:
         if reconstruction_level not in observable_dict["per_diobject_pair"].keys():
             observable_dict["per_diobject_pair"][reconstruction_level] = {}
-
         for pairing in pairings if pairings else []:
             object_type_1 = pairing[0]
             object_type_2 = pairing[1]
@@ -436,3 +445,4 @@ def clone_axis(ax, new_name):
         )
     else:
         raise NotImplementedError(f"Axis cloning not implemented for type {type(ax)}")
+
