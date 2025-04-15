@@ -88,7 +88,7 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
             "p4": diObjs.obj1 + diObjs.obj2,
         },
     )
-    
+
     # get other characteristics
     diObj["obj1_pt"] = diObjs.obj1.pt
     diObj["obj2_pt"] = diObjs.obj2.pt
@@ -100,6 +100,7 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
     diObj["eta"] = (diObjs.obj1+diObjs.obj2).eta
     diObj["phi"] = (diObjs.obj1+diObjs.obj2).phi
     diObj["mass"] = (diObjs.obj1+diObjs.obj2).mass
+    diObj["deltaR"] = diObjs.obj1.deltaR(diObjs.obj2)
         
     return diObj
 

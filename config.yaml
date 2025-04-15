@@ -49,6 +49,7 @@ diobject_pairings: # Which invariant mass pairs to consider
     - ["ScoutingElectron","ScoutingElectron"]
     - ["ScoutingMuonVtx","ScoutingMuonVtx"]
     - ["ScoutingElectron", "ScoutingMuonVtx"]
+    - ["ScoutingPFJet", "ScoutingPhoton"]
 
     
 # Histograms to make ---------------------------------------
@@ -74,6 +75,7 @@ histograms_1d:
     # - "pt"
     # - "eta"
     # - "phi"
+    # - "deltaR"
     
 
 histograms_2d: 

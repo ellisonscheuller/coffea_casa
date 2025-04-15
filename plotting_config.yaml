@@ -58,6 +58,7 @@ label_templates:
         'pt':  '$p_{{T{}{}}} [GeV]$'
         'eta': '$\eta_{{{}{}}}$'
         'phi': '$\phi_{{{}{}}}$'
+        'deltaR': '$\Delta R_{{{}{}}}$'
 
 object_label_templates:
    'L1Jet': 'L1 Jet'
