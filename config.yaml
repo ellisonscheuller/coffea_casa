@@ -10,7 +10,7 @@ n_files: -1                             # number of files to process (-1 for all
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                  # create a preprocessing json file
+do_preprocessing: False                  # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -37,25 +37,25 @@ objects:
     # - "Muon"
 
 diobject_pairings: # Which invariant mass pairs to consider
-    l1:
-    - ["L1Jet","L1Jet"]
-    - ["L1EG","L1EG"]
-    - ["L1Mu","L1Mu"]
-    - ["L1Jet","L1EG"]
-    - ["L1Jet","L1Mu"]
+    # l1:
+    # - ["L1Jet","L1Jet"]
+    # - ["L1EG","L1EG"]
+    # - ["L1Mu","L1Mu"]
+    # - ["L1Jet","L1EG"]
+    # - ["L1Jet","L1Mu"]
     
-    scouting:
-    - ["ScoutingPFJet","ScoutingPFJet"]
-    - ["ScoutingElectron","ScoutingElectron"]
-    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
-    - ["ScoutingElectron", "ScoutingMuonVtx"]
+    # scouting:
+    # - ["ScoutingPFJet","ScoutingPFJet"]
+    # - ["ScoutingElectron","ScoutingElectron"]
+    # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    # - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    per_event: # histograms to make per event
-    - "anomaly_score"
-    - "ht"
-    - "met"
+    # per_event: # histograms to make per event
+    # - "anomaly_score"
+    # - "ht"
+    # - "met"
     # - "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
@@ -79,10 +79,10 @@ histograms_2d:
 # for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
 
     # anomaly score vs diobject mass
-    - x_category: "per_event"
-      x_var: "anomaly_score"
-      y_category: "per_diobject_pair"
-      y_var: "mass"
+    # - x_category: "per_event"
+    #   x_var: "anomaly_score"
+    #   y_category: "per_diobject_pair"
+    #   y_var: "mass"
 
     # anomaly score vs event ht
     # - x_category: "per_event"
@@ -112,6 +112,12 @@ histograms_2d:
     # - x_category: "per_event"
     #   x_var: "anomaly_score"
     #   y_category: "per_object_type"
+    #   y_var: "pt"
+
+    # anomaly score vs per-object pt
+    # - x_category: "per_event"
+    #   x_var: "anomaly_score"
+    #   y_category: "per_object"
     #   y_var: "pt"
 
     # object multiplicity vs object multiplicity

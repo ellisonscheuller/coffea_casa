@@ -213,15 +213,19 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
             
 
                 x_is_object = x_cat in ["per_object_type", "per_object"]
-                y_is_object = x_cat in ["per_object_type", "per_object"]
+                y_is_object = y_cat in ["per_object_type", "per_object"]
                         
                 if x_is_object or y_is_object:
 
                     # fill histograms between two different object types
                     if (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                        
                         for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
                             # avoid redundant self-self 2d histogram
                             if (object_type_1==object_type_2) and (x_var==y_var): continue
+
+                            # avoid 2d histograms between two flattened arrays of different dimensinos
+                            if (object_type_1!=object_type_2) and ((x_var in ["pt", "eta", "phi"]) and (y_var in ["pt", "eta", "phi"])): continue
                                 
                             x_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_1][x_var]
                             y_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_2][y_var]
@@ -245,13 +249,30 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         # fill histogram if we already have all info
                         hist_name = ""
                         if (x_cat=="per_event") and (y_cat=="per_object_type"):
+                            if (y_var=="mult") or (y_var=="ht"):
+                                x_obs_mod = x_obs
+                            else:
+                                y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                x_obs_mod = dak.flatten(x_obs_broadcast)
                             hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
+                            
                         elif (x_cat=="per_object_type") and (y_cat=="per_event"):
+                            if (x_var=="mult") or (x_var=="ht"):
+                                y_obs_mod = y_obs
+                            else:
+                                x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                y_obs_mod = dak.flatten(y_obs_broadcast)
                             hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
+                            
                         elif (x_cat=="per_object_type") and (y_cat=="per_object_type"):
                             hist_name = object_type+"_"+x_var+"_"+object_type+"_"+y_var
-                        if hist_name!="":
                             fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            
+                        if hist_name!="":
                             continue
                         
 
@@ -267,18 +288,29 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 hist_name = ""
                                 if x_cat=="per_object":
                                     if y_cat=="per_event":
+                                        x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                        y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                        y_obs_mod = dak.flatten(y_obs_broadcast)
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                                    if y_cat=="per_object_type":
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
+                                    if y_cat=="per_object_type": ##FIXME
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
                                     if y_cat=="per_object":
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                        
                                 if y_cat=="per_object":
                                     if x_cat=="per_event":
+                                        y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                        x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                        x_obs_mod = dak.flatten(x_obs_broadcast)
                                         hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
-                                    if x_cat=="per_object_type":
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
+                                    if x_cat=="per_object_type": ##FIXME
                                         hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
                                 if hist_name!="":
-                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
                                     continue
 
             # handle per_diobject_pair cases
@@ -375,7 +407,7 @@ def initialize_hist_dict(self,hist_dict):
                 continue
             
             x_is_object = x_cat in ["per_object_type", "per_object"]
-            y_is_object = x_cat in ["per_object_type", "per_object"]
+            y_is_object = y_cat in ["per_object_type", "per_object"]
                         
             if x_is_object or y_is_object:
 
@@ -383,6 +415,9 @@ def initialize_hist_dict(self,hist_dict):
                     for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
                         # avoid creating redundant self-self 2d histogram
                         if (object_type_1==object_type_2) and (x_var==y_var): continue
+
+                        # can't create 2d histograms between two flattened arrays of different dimensinos
+                        if (object_type_1!=object_type_2) and ((x_var in ["pt", "eta", "phi"]) and (y_var in ["pt", "eta", "phi"])): continue
                             
                         hist_name = object_type_1+"_"+x_var+"_"+object_type_2+"_"+y_var
                         if x_var==y_var:
