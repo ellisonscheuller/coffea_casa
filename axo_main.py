@@ -325,7 +325,8 @@ def initialize_hist_dict(self,hist_dict):
         'minv_log': self.minv_axis_log,
         'minv_low': self.minv_axis_low,
         'minv_mid': self.minv_axis_mid,
-        'mass': self.mass_axis
+        'mass': self.mass_axis,
+        'deltaR': self.deltaR_axis
     }
     for histogram_group, histograms in self.config["histograms_1d"].items() \
         if self.config["histograms_1d"] else []:  # Process each histogram according to its group
@@ -504,6 +505,9 @@ class MakeAXOHists (processor.ProcessorABC):
         )
         self.mass_axis = hist.axis.Regular(
             300, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
+        )
+        self.deltaR_axis = hist.axis.Regular(
+            300, 0, 6.5, name="deltaR", label=r"$\Delta R$ between $obj_1$ and $obj_2$"
         )
         self.minv_axis_log = hist.axis.Regular(
             1000, 0.01, 3000, name="minv_log", label=r"$m_{obj_{1},obj_{2}}$ [GeV]", 
