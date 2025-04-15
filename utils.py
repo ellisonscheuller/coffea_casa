@@ -142,7 +142,6 @@ def create_hist_2d(
     if object_axis==None:
         h = hda.hist.Hist(dataset_axis, trigger_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
     else:
-<<<<<<< HEAD
         h = hda.hist.Hist(dataset_axis, trigger_axis, object_axis, observable1_axis, observable2_axis, storage="weight", label="nEvents")
         
     hist_dict[f'{hist_name}'] = h
