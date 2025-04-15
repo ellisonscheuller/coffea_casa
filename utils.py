@@ -398,3 +398,41 @@ def calculate_observables(self, observables, events):
                 observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
                         
     return observable_dict
+
+def clone_axis(ax, new_name):
+    if isinstance(ax, axis.Regular):
+        return axis.Regular(
+            ax.size,
+            ax.edges[0],
+            ax.edges[-1],
+            name=new_name,
+            label=ax.label,
+            underflow=ax.traits.underflow,
+            overflow=ax.traits.overflow,
+            circular=ax.traits.circular,
+            growth=ax.traits.growth
+        )
+    elif isinstance(ax, axis.Variable):
+        return axis.Variable(
+            ax.edges,
+            name=new_name,
+            label=ax.label,
+            underflow=ax.traits.underflow,
+            overflow=ax.traits.overflow,
+            circular=ax.traits.circular,
+            growth=ax.traits.growth
+        )
+    elif isinstance(ax, axis.IntCategory):
+        return axis.IntCategory(
+            ax.categories,
+            name=new_name,
+            label=ax.label,
+        )
+    elif isinstance(ax, axis.StrCategory):
+        return axis.StrCategory(
+            ax.categories,
+            name=new_name,
+            label=ax.label,
+        )
+    else:
+        raise NotImplementedError(f"Axis cloning not implemented for type {type(ax)}")

@@ -34,7 +34,7 @@ from coffea.dataset_tools import (
 from ScoutingNanoAODSchema import ScoutingNanoAODSchema
 NanoAODSchema.warn_missing_crossrefs = False
 
-from utils import find_diobjects, load_config, load_dataset, get_required_observables, calculate_observables, save_histogram, create_hist_1d, create_hist_2d, fill_hist_1d, fill_hist_2d
+from utils import find_diobjects, load_config, load_dataset, get_required_observables, calculate_observables, save_histogram, create_hist_1d, create_hist_2d, fill_hist_1d, fill_hist_2d, clone_axis
 
 import fsspec
 fsspec.config.conf['xrootd'] = {'timeout': 600}
@@ -216,6 +216,23 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                 y_is_object = x_cat in ["per_object_type", "per_object"]
                         
                 if x_is_object or y_is_object:
+
+                    # fill histograms between two different object types
+                    if (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                        for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
+                            # avoid redundant self-self 2d histogram
+                            if (object_type_1==object_type_2) and (x_var==y_var): continue
+                                
+                            x_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_1][x_var]
+                            y_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_2][y_var]
+                            hist_name = object_type_1+"_"+x_var+"_"+object_type_2+"_"+y_var
+                            if x_var==y_var:
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, f"{x_var}_1", f"{y_var}_2")
+                            else:
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                        continue
+
+                    # other cases (histograms not crossing between object types)
                     for object_type in self.config["objects"][reconstruction_level]:
 
                         # handle per_object_type cases
@@ -224,7 +241,6 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         if y_cat=="per_object_type":
                             y_obs = observable_calculations["per_object_type"][reconstruction_level][object_type][y_var]
 
-                        
 
                         # fill histogram if we already have all info
                         hist_name = ""
@@ -362,6 +378,19 @@ def initialize_hist_dict(self,hist_dict):
             y_is_object = x_cat in ["per_object_type", "per_object"]
                         
             if x_is_object or y_is_object:
+
+                if (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                    for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
+                        # avoid creating redundant self-self 2d histogram
+                        if (object_type_1==object_type_2) and (x_var==y_var): continue
+                            
+                        hist_name = object_type_1+"_"+x_var+"_"+object_type_2+"_"+y_var
+                        if x_var==y_var:
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, clone_axis(axis_map[x_var], f"{x_var}_1"), 
+                                           clone_axis(axis_map[y_var], f"{y_var}_2"), hist_name)
+                        else:
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                
                 for object_type in self.config["objects"][reconstruction_level]:
 
                     hist_name = ""
