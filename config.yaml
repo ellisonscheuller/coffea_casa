@@ -114,6 +114,12 @@ histograms_2d:
     #   y_category: "per_object_type"
     #   y_var: "pt"
 
+    # object multiplicity vs object multiplicity
+    # - x_category: "per_object_type"
+    #   x_var: "mult"
+    #   y_category: "per_object_type"
+    #   y_var: "mult"
+
       
     
 
