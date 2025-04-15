@@ -81,10 +81,10 @@ histograms_2d:
 # for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
 
     # anomaly score vs diobject mass
-    - x_category: "per_event"
-      x_var: "anomaly_score"
-      y_category: "per_diobject_pair"
-      y_var: "mass"
+    # - x_category: "per_event"
+    #   x_var: "anomaly_score"
+    #   y_category: "per_diobject_pair"
+    #   y_var: "mass"
 
     # anomaly score vs event ht
     # - x_category: "per_event"
@@ -158,8 +158,8 @@ triggers:
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
     - 'DST_PFScouting_DoubleMuon'
-    # - 'DST_PFScouting_JetHT'
-    - 'DST_PFScouting_ZeroBias'
+    - 'DST_PFScouting_JetHT'
+    # - 'DST_PFScouting_ZeroBias'
 
 orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
