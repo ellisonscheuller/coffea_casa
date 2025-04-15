@@ -49,7 +49,14 @@ def create_four_vectors(objects, reconstruction_level):
             behavior=objects.behavior,
         )
 
-def find_diobjects(obj_coll1, obj_coll2, reconstruction_level):
+def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=False):
+
+    if opposite_charge:
+        if hasattr(obj_coll1, "charge") and hasattr(obj_coll2, "charge"):
+            charges1 = obj_coll1.charge
+            charges2 = obj_coll2.charge
+        else:
+            raise AttributeError("One or both object collections do not have a 'charge' attribute.")
 
     objs1 = create_four_vectors(obj_coll1, reconstruction_level)
     objs2 = create_four_vectors(obj_coll2, reconstruction_level)
@@ -61,6 +68,11 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level):
     if obj_coll1 is obj_coll2:
         same_object_mask = diObjs.obj1.pt != diObjs.obj2.pt
         diObjs = diObjs[same_object_mask]
+
+    if opposite_charge:
+        diObjs_charge = dak.cartesian({"obj1_charge": charges1, "obj2_charge": charges2})
+        charge_mask = (diObjs_charge.obj1_charge + diObjs_charge.obj2_charge) == 0
+        diObjs = diObjs[charge_mask]
     
     diObj = dak.zip(
         {
@@ -371,7 +383,10 @@ def calculate_observables(self, observables, events):
             if object_type_1 == object_type_2: # same object
                 objects = getattr(events, object_type_1)
                 objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
-                di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
+                if "Muon" in object_type_1:
+                    di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level, opposite_charge=True)
+                else:
+                    di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
             else:
                 objects_1 = getattr(events, object_type_1)
                 objects_1 = clean_objects(objects_1, self.config["object_cleaning"][object_type_1])
