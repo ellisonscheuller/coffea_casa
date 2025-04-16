@@ -10,7 +10,6 @@ import yaml
 def create_four_vectors(objects, reconstruction_level):
     """Creates four-vectors from objects (pt, eta, phi, mass) for the given reconstruction_level"""
 
-    
     if reconstruction_level == "l1":
         return dak.zip(
             {
@@ -53,9 +52,7 @@ def create_four_vectors(objects, reconstruction_level):
         )
 
 def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=False):
-    """Computes diobject combinations between the obj_coll1 and obj_coll2 for given reconstruction_level. 
-    opposite_charge requires that each combination have a total charge of zero. Returns the diobjects with 
-    different calculated observables""""
+    """Computes diobject combinations between the obj_coll1 and obj_coll2 for given reconstruction_level. opposite_charge requires that each combination have a total charge of zero. Returns the diobjects with different calculated observables"""
 
     # check if charge is an attribute of both objects if opposite_charge is enabled
     if opposite_charge:
@@ -278,7 +275,7 @@ def clean_objects(objects, cuts, reconstruction_level=None):
     if reconstruction_level == "l1":
         bx_mask = (objects.bx == 0) # Filter for bunch crossing == 0 
     else:
-        bx_mask = dak.ones_like(objects.bx, dtype=bool)
+        bx_mask = dak.ones_like(objects.pt, dtype=bool)
 
     # Find the first valid branch to initialize the mask
     reference_branch = next((br for br in cuts if hasattr(objects, br)), None)
@@ -304,8 +301,7 @@ def clean_objects(objects, cuts, reconstruction_level=None):
     
 
 def get_required_observables(self):
-    """Combs through the observables needed to fill the requested histograms in self.config and
-    returns a dictionary that lists which observables need to be calculated."""
+    """Combs through the observables needed to fill the requested histograms in self.config and returns a dictionary that lists which observables need to be calculated."""
 
     required_observables = {
         "per_event": set(),
@@ -435,8 +431,7 @@ def calculate_observables(self, observables, events):
     return observable_dict
 
 def clone_axis(ax, new_name):
-    """Clones the hist axis ax with identical parameters except renaming to new_name. 
-    Used in 2d histograms with repeated axis names."""
+    """Clones the hist axis ax with identical parameters except renaming to new_name. Used in 2d histograms with repeated axis names."""
 
     
     if isinstance(ax, axis.Regular):

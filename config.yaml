@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
 json_filename: "file_list.json"  # name of json file containing root file paths
-dataset_name: "2024G_test"            # name of key within json containing dataset
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -10,7 +10,7 @@ n_files: -1                             # number of files to process (-1 for all
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: False                  # create a preprocessing json file
+do_preprocessing: True                  # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -37,25 +37,25 @@ objects:
     # - "Muon"
 
 diobject_pairings: # Which invariant mass pairs to consider
-    # l1:
-    # - ["L1Jet","L1Jet"]
+    l1:
+    - ["L1Jet","L1Jet"]
     # - ["L1EG","L1EG"]
     # - ["L1Mu","L1Mu"]
     # - ["L1Jet","L1EG"]
     # - ["L1Jet","L1Mu"]
     
-    # scouting:
-    # - ["ScoutingPFJet","ScoutingPFJet"]
-    # - ["ScoutingElectron","ScoutingElectron"]
-    # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
-    # - ["ScoutingElectron", "ScoutingMuonVtx"]
+    scouting:
+    - ["ScoutingPFJet","ScoutingPFJet"]
+    - ["ScoutingElectron","ScoutingElectron"]
+    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    - ["ScoutingElectron", "ScoutingMuonVtx"]
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    # per_event: # histograms to make per event
+    per_event: # histograms to make per event
     # - "anomaly_score"
-    # - "ht"
-    # - "met"
+    - "ht"
+    - "met"
     # - "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
@@ -126,9 +126,6 @@ histograms_2d:
     #   y_category: "per_object_type"
     #   y_var: "mult"
 
-      
-    
-
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4
     "ScoutingElectron": 4
@@ -145,7 +142,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    - 'all_available_triggers'
+    # - 'all_available_triggers'
     # - 'all_l1_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
@@ -158,8 +155,8 @@ triggers:
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
     - 'DST_PFScouting_DoubleMuon'
-    # - 'DST_PFScouting_JetHT'
-    - 'DST_PFScouting_ZeroBias'
+    - 'DST_PFScouting_JetHT'
+    # - 'DST_PFScouting_ZeroBias'
 
 orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 

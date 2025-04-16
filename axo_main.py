@@ -75,8 +75,6 @@ def process_histograms(dataset_runnable, config):
         MakeAXOHists(
             trigger_paths=config["triggers"],
             objects=config["objects"],
-            #hists_to_process=hist_selection,
-            #branches_to_save=config["branch_selection"],
             has_scores=config["has_scores"], 
             axo_version=config["axo_version"],
             config=config
@@ -287,29 +285,28 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 # fill histograms if we have all info
                                 hist_name = ""
                                 if x_cat=="per_object":
+                                    if y_cat=="per_object_type":
+                                        raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                                     if y_cat=="per_event":
                                         x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
                                         y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
                                         y_obs_mod = dak.flatten(y_obs_broadcast)
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
                                         fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
-                                    if y_cat=="per_object_type": ##FIXME
-                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
-                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                        continue
                                     if y_cat=="per_object":
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                         fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                        continue
                                         
                                 if y_cat=="per_object":
-                                    if x_cat=="per_event":
-                                        y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
-                                        x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
-                                        x_obs_mod = dak.flatten(x_obs_broadcast)
-                                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
-                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
-                                    if x_cat=="per_object_type": ##FIXME
-                                        hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
-                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                    if x_cat=="per_object_type":
+                                        raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
+                                    y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                    x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                    x_obs_mod = dak.flatten(x_obs_broadcast)
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
                                 if hist_name!="":
                                     continue
 
@@ -448,14 +445,14 @@ def initialize_hist_dict(self,hist_dict):
                                 if y_cat=="per_event":
                                     hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
                                 if y_cat=="per_object_type":
-                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                    raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                                 if y_cat=="per_object":
                                     hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                             if y_cat=="per_object":
                                 if x_cat=="per_event":
                                     hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                 if x_cat=="per_object_type":
-                                    hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                             if hist_name!="":
                                 create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                                 continue
