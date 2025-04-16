@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import awkward as ak
 import operator
+import shutil
 
 def create_four_vectors(objects, reconstruction_level):
     """Creates four-vectors from objects (pt, eta, phi, mass) for the given reconstruction_level"""
@@ -173,9 +174,16 @@ def fill_hist_2d(
     return hist_dict
 
 def load_config(config_path="config.yaml"):
-    """Loads YAML configuration."""
+    """Loads YAML configuration and saves a timestamped copy."""
     with open(config_path, 'r') as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    dataset = config["dataset_name"]
+    backup_path = f"config_{dataset}_{timestamp}.yaml"
+    shutil.copy(config_path, backup_path)
+
+    return config
 
 def load_dataset(json_filename, dataset_name, n_files):
     """Loads JSON dataset and filters files based on n_files limit."""
@@ -190,7 +198,7 @@ def load_dataset(json_filename, dataset_name, n_files):
 
 def save_histogram(hist_result, dataset_name):
     """Saves the histogram to a pickle file."""
-    filename = f'hist_result_{dataset_name}_{datetime.date.today().strftime("%Y%m%d")}.pkl'
+    filename = f'hist_result_{dataset_name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pkl'
     save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
