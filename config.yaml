@@ -118,18 +118,17 @@ histograms_2d:
     #   y_category: "per_object_type"
     #   y_var: "pt"
 
+    # anomaly score vs per-object pt
+    # - x_category: "per_event"
+    #   x_var: "anomaly_score"
+    #   y_category: "per_object"
+    #   y_var: "pt"
+
     # object multiplicity vs object multiplicity
     # - x_category: "per_object_type"
     #   x_var: "mult"
     #   y_category: "per_object_type"
     #   y_var: "mult"
-
-      
-# histograms_2d: # 
-#     - ["anomaly_score","ht"]
-#     - ["anomaly_score","met"]
-#     - ["anomaly_score",["diobject","m"]]
-
 
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4

@@ -17,6 +17,8 @@ import awkward as ak
 import operator
 
 def create_four_vectors(objects, reconstruction_level):
+    """Creates four-vectors from objects (pt, eta, phi, mass) for the given reconstruction_level"""
+
     if reconstruction_level == "l1":
         return dak.zip(
             {
@@ -59,7 +61,9 @@ def create_four_vectors(objects, reconstruction_level):
         )
 
 def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=False):
+    """Computes diobject combinations between the obj_coll1 and obj_coll2 for given reconstruction_level. opposite_charge requires that each combination have a total charge of zero. Returns the diobjects with different calculated observables"""
 
+    # check if charge is an attribute of both objects if opposite_charge is enabled
     if opposite_charge:
         if hasattr(obj_coll1, "charge") and hasattr(obj_coll2, "charge"):
             charges1 = obj_coll1.charge
@@ -78,6 +82,7 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
         same_object_mask = diObjs.obj1.pt != diObjs.obj2.pt
         diObjs = diObjs[same_object_mask]
 
+    # require opposite_charge if requested
     if opposite_charge:
         diObjs_charge = dak.cartesian({"obj1_charge": charges1, "obj2_charge": charges2})
         charge_mask = (diObjs_charge.obj1_charge + diObjs_charge.obj2_charge) == 0
@@ -190,6 +195,8 @@ def save_histogram(hist_result, dataset_name):
     print(f"Histogram saved as {filename}")
 
 def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
+    """Returns the anomaly score from events_trig for specified axo_version."""
+    
     assert has_scores, "Error, dataset does not have axol1tl scores"
     if axo_version == "v4":
         hist_values = events_trig.axol1tl.score_v4
@@ -267,14 +274,18 @@ def get_per_object_hist_values(objects, i, histogram):
         "pt": lambda:  dak.flatten(objects.pt[:,i:i+1]),
         "eta": lambda:  dak.flatten(objects.eta[:,i:i+1]),
         "phi": lambda: dak.flatten(objects.phi[:,i:i+1]),
+        "counts": lambda: dak.num(objects.pt[:, i:i+1], axis=1) # counts is used to broadcast per-event observables while making 2d arrays
     }
     return level_map.get(histogram, {})()
 
 
 def clean_objects(objects, cuts, reconstruction_level=None):
+    """Apply upper and lower-bound cuts on different object variables based on reconstruction level."""
 
     if reconstruction_level == "l1":
-        objects = objects[objects.bx==0] # Filter for bunch crossing == 0 
+        bx_mask = (objects.bx == 0) # Filter for bunch crossing == 0 
+    else:
+        bx_mask = dak.ones_like(objects.pt, dtype=bool)
 
     # Find the first valid branch to initialize the mask
     reference_branch = next((br for br in cuts if hasattr(objects, br)), None)
@@ -292,9 +303,15 @@ def clean_objects(objects, cuts, reconstruction_level=None):
             # Apply cuts to the mask
             mask = mask & (getattr(objects, br) > lower_cut) & (getattr(objects, br) < upper_cut)
 
-    return objects[mask]
+    mask = mask & bx_mask
+
+    cleaned_objects = objects[mask]
+
+    return cleaned_objects
+    
 
 def get_required_observables(self):
+    """Combs through the observables needed to fill the requested histograms in self.config and returns a dictionary that lists which observables need to be calculated."""
 
     required_observables = {
         "per_event": set(),
@@ -317,9 +334,17 @@ def get_required_observables(self):
         required_observables[x_cat].add(x_var)
         required_observables[y_cat].add(y_var)
 
+        # hold on to mult for unflattening arrays if we need it
+        if ((x_cat=="per_event") and (y_cat=="per_object_type")) and ((y_var!="mult") and (y_var!="ht")):
+            required_observables["per_object_type"].add("mult")
+        if ((y_cat=="per_event") and (x_cat=="per_object_type")) and ((x_var!="mult") and (x_var!="ht")):
+            required_observables["per_object_type"].add("mult")
+
     return required_observables
 
 def calculate_observables(self, observables, events):
+    """Uses the dictionary observables to calculate each listed observable from events and stores the results 
+    in observable_dict, which is returned."""
 
     observable_dict = {
         "per_event": {},
@@ -372,12 +397,18 @@ def calculate_observables(self, observables, events):
                     observable
                 )
 
-            for observable in observables["per_object"]:
-                for i in range(self.config["objects_max_i"][object_type]):
+            for i in range(self.config["objects_max_i"][object_type]):
+                for observable in observables["per_object"]:
                     observable_dict["per_object"][reconstruction_level][object_type][f"{observable}_{i}"] = get_per_object_hist_values(
                         objects, 
                         i, 
-                        observable)
+                        observable,
+                    )
+                observable_dict["per_object"][reconstruction_level][object_type][f"counts_{i}"] = get_per_object_hist_values(
+                    objects, 
+                    i, 
+                    "counts",
+                )
 
     # calculate per-diobject-pair observables
     for reconstruction_level, pairings in self.config["diobject_pairings"].items() \
@@ -409,6 +440,9 @@ def calculate_observables(self, observables, events):
     return observable_dict
 
 def clone_axis(ax, new_name):
+    """Clones the hist axis ax with identical parameters except renaming to new_name. Used in 2d histograms with repeated axis names."""
+
+    
     if isinstance(ax, axis.Regular):
         return axis.Regular(
             ax.size,
