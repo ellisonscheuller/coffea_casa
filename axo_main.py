@@ -11,16 +11,20 @@
 
 # library imports
 from collections import defaultdict
+import csv
 import dask
 from dask.distributed import Client
 import dask_awkward as dak
 import datetime
 import hist
 import json
+import os
+import re
 import time
 import vector
 vector.register_awkward()
 import uproot
+import zipfile
 
 # coffea imports
 from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
@@ -501,6 +505,20 @@ class MakeAXOHists (processor.ProcessorABC):
         self.has_scores = has_scores
         self.axo_version = axo_version
         self.config = config
+
+        if config["use_emulated_score"]:
+            # Unzip only once per worker (guard with a flag)
+            if not os.path.exists("config"):
+                with zipfile.ZipFile("config.zip", "r") as zip_ref:
+                    zip_ref.extractall("config")
+
+            # Load the CSV into memory
+            self.axo_thresholds = {}
+            with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])            
+
         
         # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 
         # String based axes
@@ -568,7 +586,7 @@ class MakeAXOHists (processor.ProcessorABC):
         print("Trigger paths:",self.trigger_paths)
         for trigger in self.trigger_paths:
             print("Trigger",trigger)
-            if trigger[0:3] == "DST":
+            if (trigger[0:3] == "DST") and (not self.config["use_emulated_score"]):
                 assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
                 assert trigger[4:] in events.HLT.fields, f"Error: {trigger[4:]} not in available HLT paths: {events.HLT.fields}"
@@ -593,6 +611,15 @@ class MakeAXOHists (processor.ProcessorABC):
                 if trigger_path == "all_available_triggers":
                     print("all_available_triggers")
                     events_trig = events
+                elif ("DST_PFScouting_AXO" in trigger_path) and self.config["use_emulated_score"]:
+                    print(trigger_path + " (emulated)")
+                    match = re.search(r"(AXO\w+)", trigger_path)
+                    axo_trigger_name = match(0)
+                    if self.axo_version=="v3":
+                        events_trig = events[events.axol1tl.score_v3 > self.axo_thresholds[axo_trigger_name]]
+                    elif self.axo_version=="v4":
+                        events_trig = events[events.axol1tl.score_v4 > self.axo_thresholds[axo_trigger_name]]
+                    else: raise NotImplementedError(f"axo version {self.axo_version} not implemented")
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
@@ -739,7 +766,10 @@ def main():
     client.upload_file("./ScoutingNanoAODSchema.py");
     client.upload_file("./utils.py");
 
-    config = load_config()  
+    config = load_config()
+    
+    if config["use_emulated_score"]:
+        client.upload_file("config.zip");
 
     dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])
     
