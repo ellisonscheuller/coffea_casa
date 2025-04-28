@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list.json"  # name of json file containing root file paths
-dataset_name: "2024I_10"            # name of key within json containing dataset
+json_filename: "filelist_AXO_CICADA.json"  # name of json file containing root file paths
+dataset_name: "2024I_test"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -21,11 +21,11 @@ branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save outpu
 # Object configurations ----------------------------------
 # Which objects to process
 objects: 
-    # l1:
-    # - "L1Jet"
-    # - "L1EG"
-    # - "L1Mu"
-    scouting:
+    l1:
+    - "L1Jet"
+    - "L1EG"
+    - "L1Mu"
+    #scouting:
     # - "ScoutingPFJet"
     # - "ScoutingElectron"
     # - "ScoutingMuonNoVtx"
