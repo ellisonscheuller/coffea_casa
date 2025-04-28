@@ -688,11 +688,26 @@ class MakeAXOHists (processor.ProcessorABC):
                         events_l1_selection = dak.where(getattr(events_ortho.L1,i)==1, 1, events_l1_selection) # if triggered by a different bit set to 0
                     events_l1_selection_bool = dak.values_astype(events_l1_selection,bool)
                     events_trig = events_ortho[events_l1_selection_bool]
+                elif ("AXO" in trigger_path) and self.config["use_emulated_score"]:
+                    print(trigger_path + " (emulated)")
+                    axo_trigger_name = (re.search(r"(AXO\w+)", trigger_path)[0]).replace("_", "")
+                    if self.axo_version not in ["v3", "v4"]:
+                        raise NotImplementedError(f"axo version {self.axo_version} not implemented")
+                    score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
+                    events_trig = events_ortho[getattr(events_ortho.axol1tl, score_attr) > self.axo_thresholds[axo_trigger_name]]
+                elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
+                    print(trigger_path + " (emulated)")
+                    if not self.config["is_l1nano"]:
+                        raise NotImplementedError(f"CICADA score is not implemented in Scouting NanoAOD")
+                    cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
+                    events_trig = events_ortho[getattr(events_ortho.CICADA2024, "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
 
                 else: # select events passing the orthogonal dataset and the trigger of interest
                     trig_br = getattr(events_ortho,trigger_path.split('_')[0])
                     trig_path = '_'.join(trigger_path.split('_')[1:])
                     events_trig = events_ortho[getattr(trig_br,trig_path)] 
+
+
 
                 new_trigger_path = f"{ortho_trig}_{trigger_path}"
                 new_trigger_paths += [new_trigger_path]

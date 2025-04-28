@@ -62,7 +62,7 @@ histograms_1d:
     - "axo_score"
     - "cicada_score"
     - "ht"
-    # - "met"
+    - "met"
     #- "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
@@ -151,7 +151,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    - 'all_available_triggers'
+    # - 'all_available_triggers'
     # - 'all_l1_triggers'
     - 'L1_ZeroBias'
     # - 'L1_ZeroBias_copy'
@@ -226,8 +226,8 @@ object_cleaning:
 
 
 # Module to run -------------------------------------------
-module: "default"
-# module: "efficiency"
+# module: "default"
+module: "efficiency"
 # module: "purity" 
 # module: "pileup" # TODO: implement
 

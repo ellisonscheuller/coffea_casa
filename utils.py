@@ -183,7 +183,7 @@ def load_config(config_path="config.yaml"):
     backup_path = f"config_{dataset}_{timestamp}.yaml"
     shutil.copy(config_path, backup_path)
 
-    return config
+    return config, timestamp
 
 def load_dataset(json_filename, dataset_name, n_files):
     """Loads JSON dataset and filters files based on n_files limit."""
@@ -196,9 +196,9 @@ def load_dataset(json_filename, dataset_name, n_files):
     # Use dictionary slicing for efficiency
     return {dataset_name: {'files': dict(list(dataset[dataset_name]['files'].items())[:n_files])}}
 
-def save_histogram(hist_result, dataset_name):
+def save_histogram(hist_result, dataset_name,timestamp):
     """Saves the histogram to a pickle file."""
-    filename = f'hist_result_{dataset_name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pkl'
+    filename = f'hist_result_{dataset_name}_{timestamp}.pkl'
     save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
