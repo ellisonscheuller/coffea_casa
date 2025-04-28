@@ -1,18 +1,18 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list.json"  # name of json file containing root file paths
+json_filename: "filelist_AXO_CICADA_17Apr2025.json"  # name of json file containing root file paths
 dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                 # whether the files contain axo anomaly score branches
 axo_version: "v4"                # which axo version to use for score hists
-use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
-is_l1nano: False                 # whether files are l1nano format (assumed scouting nano if False)
+use_emulated_score: True        # whether to use emulated axo score instead of the DST paths
+is_l1nano: True                 # whether files are l1nano format (assumed scouting nano if False)
 
 # Coffea configurations  --------------------------------------
 n_files: -1                               # number of files to process (-1 for all)
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                    # create a preprocessing json file
+do_preprocessing: False #True                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -27,12 +27,13 @@ objects:
     - "L1Jet"
     - "L1EG"
     - "L1Mu"
-    # scouting:
+    #scouting:
     # - "ScoutingPFJet"
     # - "ScoutingElectron"
     # - "ScoutingMuonNoVtx"
     # - "ScoutingMuonVtx"
     # - "ScoutingPhoton"
+    # - "nScoutingPrimaryVertex"
     # full_reco: # only works on non-scouting datasets
     # - "Jet"
     # - "Electron"
@@ -53,18 +54,19 @@ diobject_pairings: # Which invariant mass pairs to consider
     # - ["ScoutingElectron", "ScoutingMuonVtx"]
     # - ["ScoutingPFJet", "ScoutingPhoton"]
 
+
     
 # Histograms to make ---------------------------------------
 histograms_1d:
     per_event: # histograms to make per event
-    # - "axo_score"
-    # - "cicada_score"
+    - "axo_score"
+    - "cicada_score"
     - "ht"
     # - "met"
-    # - "mult"
+    #- "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
+    # # # - "ht"
     # - "mult"
     # - "pt"
     # - "eta"
@@ -151,9 +153,23 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
 triggers:
     - 'all_available_triggers'
     # - 'all_l1_triggers'
+    - 'L1_ZeroBias'
+    # - 'L1_ZeroBias_copy'
+    # - 'L1_AXO_Loose'
+    - 'L1_AXO_Nominal'
+    # - 'L1_AXO_Tight'
+    # - 'L1_AXO_VLoose'
+    # - 'L1_AXO_VTight'
+    # - 'L1_CICADA_Loose'
+    - 'L1_CICADA_Medium'
+    # - 'L1_CICADA_Tight'
+    # - 'L1_CICADA_VLoose'
+    # - 'L1_CICADA_VTight'
+    # - 'L1_HTT280er'
+
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
-    - 'DST_PFScouting_AXONominal'
+    # - 'DST_PFScouting_AXONominal'
     # - 'DST_PFScouting_AXOTight'
     # - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
@@ -161,15 +177,15 @@ triggers:
     # - 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
-    - 'DST_PFScouting_DoubleMuon'
-    - 'DST_PFScouting_JetHT'
+    # - 'DST_PFScouting_DoubleMuon'
+    # - 'DST_PFScouting_JetHT'
     # - 'DST_PFScouting_ZeroBias'
     # - 'L1_AXO_Nominal'
     # - 'L1_CICADA_Medium'
     # - 'L1_SingleMu22'
     # - 'L1_HTT280er'
 
-orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
+orthogonal_trigger: 'L1_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
@@ -189,8 +205,9 @@ object_cleaning:
         pt: [5.0, null] # GeV
         eta: [-1.44, 1.44]
     "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
-        pt: [0.1, null] # GeV
-        eta: [-5, 5]
+        #pt: [0.1, null] # GeV
+        pt: [30, 999.5] # GeV
+        eta: [-1.3, 1.3]
     "L1EG": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
         pt: [0.1, null] # GeV
         eta: [-2.5, 2.5]
@@ -209,8 +226,8 @@ object_cleaning:
 
 
 # Module to run -------------------------------------------
-# module: "default"
-module: "efficiency"
+module: "default"
+# module: "efficiency"
 # module: "purity" 
 # module: "pileup" # TODO: implement
 
