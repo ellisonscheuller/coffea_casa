@@ -11,16 +11,20 @@
 
 # library imports
 from collections import defaultdict
+import csv
 import dask
 from dask.distributed import Client
 import dask_awkward as dak
 import datetime
 import hist
 import json
+import os
+import re
 import time
 import vector
 vector.register_awkward()
 import uproot
+import zipfile
 
 # coffea imports
 from coffea.nanoevents import NanoEventsFactory, NanoAODSchema
@@ -75,8 +79,6 @@ def process_histograms(dataset_runnable, config):
         MakeAXOHists(
             trigger_paths=config["triggers"],
             objects=config["objects"],
-            #hists_to_process=hist_selection,
-            #branches_to_save=config["branch_selection"],
             has_scores=config["has_scores"], 
             axo_version=config["axo_version"],
             config=config
@@ -213,15 +215,19 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
             
 
                 x_is_object = x_cat in ["per_object_type", "per_object"]
-                y_is_object = x_cat in ["per_object_type", "per_object"]
+                y_is_object = y_cat in ["per_object_type", "per_object"]
                         
                 if x_is_object or y_is_object:
 
                     # fill histograms between two different object types
                     if (x_cat=="per_object_type") and (y_cat=="per_object_type"):
+                        
                         for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
                             # avoid redundant self-self 2d histogram
                             if (object_type_1==object_type_2) and (x_var==y_var): continue
+
+                            # avoid 2d histograms between two flattened arrays of different dimensinos
+                            if (object_type_1!=object_type_2) and ((x_var in ["pt", "eta", "phi"]) and (y_var in ["pt", "eta", "phi"])): continue
                                 
                             x_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_1][x_var]
                             y_obs = observable_calculations["per_object_type"][reconstruction_level][object_type_2][y_var]
@@ -245,13 +251,30 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         # fill histogram if we already have all info
                         hist_name = ""
                         if (x_cat=="per_event") and (y_cat=="per_object_type"):
+                            if (y_var=="mult") or (y_var=="ht"):
+                                x_obs_mod = x_obs
+                            else:
+                                y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                x_obs_mod = dak.flatten(x_obs_broadcast)
                             hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
+                            
                         elif (x_cat=="per_object_type") and (y_cat=="per_event"):
+                            if (x_var=="mult") or (x_var=="ht"):
+                                y_obs_mod = y_obs
+                            else:
+                                x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                y_obs_mod = dak.flatten(y_obs_broadcast)
                             hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
+                            
                         elif (x_cat=="per_object_type") and (y_cat=="per_object_type"):
                             hist_name = object_type+"_"+x_var+"_"+object_type+"_"+y_var
-                        if hist_name!="":
                             fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            
+                        if hist_name!="":
                             continue
                         
 
@@ -266,19 +289,29 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 # fill histograms if we have all info
                                 hist_name = ""
                                 if x_cat=="per_object":
-                                    if y_cat=="per_event":
-                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
                                     if y_cat=="per_object_type":
-                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                        raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
+                                    if y_cat=="per_event":
+                                        x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                        y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                        y_obs_mod = dak.flatten(y_obs_broadcast)
+                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
+                                        continue
                                     if y_cat=="per_object":
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                        continue
+                                        
                                 if y_cat=="per_object":
-                                    if x_cat=="per_event":
-                                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                     if x_cat=="per_object_type":
-                                        hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
-                                if hist_name!="":
+                                        raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
+                                    y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                    x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                    x_obs_mod = dak.flatten(x_obs_broadcast)
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                     fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                                if hist_name!="":
                                     continue
 
             # handle per_diobject_pair cases
@@ -325,7 +358,8 @@ def initialize_hist_dict(self,hist_dict):
         'minv_log': self.minv_axis_log,
         'minv_low': self.minv_axis_low,
         'minv_mid': self.minv_axis_mid,
-        'mass': self.mass_axis
+        'mass': self.mass_axis,
+        'deltaR': self.deltaR_axis
     }
     for histogram_group, histograms in self.config["histograms_1d"].items() \
         if self.config["histograms_1d"] else []:  # Process each histogram according to its group
@@ -375,7 +409,7 @@ def initialize_hist_dict(self,hist_dict):
                 continue
             
             x_is_object = x_cat in ["per_object_type", "per_object"]
-            y_is_object = x_cat in ["per_object_type", "per_object"]
+            y_is_object = y_cat in ["per_object_type", "per_object"]
                         
             if x_is_object or y_is_object:
 
@@ -383,6 +417,9 @@ def initialize_hist_dict(self,hist_dict):
                     for object_type_1, object_type_2 in product(self.config["objects"][reconstruction_level], repeat=2):
                         # avoid creating redundant self-self 2d histogram
                         if (object_type_1==object_type_2) and (x_var==y_var): continue
+
+                        # can't create 2d histograms between two flattened arrays of different dimensinos
+                        if (object_type_1!=object_type_2) and ((x_var in ["pt", "eta", "phi"]) and (y_var in ["pt", "eta", "phi"])): continue
                             
                         hist_name = object_type_1+"_"+x_var+"_"+object_type_2+"_"+y_var
                         if x_var==y_var:
@@ -413,14 +450,14 @@ def initialize_hist_dict(self,hist_dict):
                                 if y_cat=="per_event":
                                     hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
                                 if y_cat=="per_object_type":
-                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+y_var
+                                    raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                                 if y_cat=="per_object":
                                     hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                             if y_cat=="per_object":
                                 if x_cat=="per_event":
                                     hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                 if x_cat=="per_object_type":
-                                    hist_name = object_type+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                             if hist_name!="":
                                 create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                                 continue
@@ -468,6 +505,20 @@ class MakeAXOHists (processor.ProcessorABC):
         self.has_scores = has_scores
         self.axo_version = axo_version
         self.config = config
+
+        if config["use_emulated_score"]:
+            # Unzip only once per worker (guard with a flag)
+            if not os.path.exists("config"):
+                with zipfile.ZipFile("config.zip", "r") as zip_ref:
+                    zip_ref.extractall("config")
+
+            # Load the CSV into memory
+            self.axo_thresholds = {}
+            with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])            
+
         
         # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 
         # String based axes
@@ -505,6 +556,9 @@ class MakeAXOHists (processor.ProcessorABC):
         self.mass_axis = hist.axis.Regular(
             300, 0, 3000, name="mass", label=r"$m_{obj_{1},obj_{2}}$ [GeV]"
         )
+        self.deltaR_axis = hist.axis.Regular(
+            300, 0, 6.5, name="deltaR", label=r"$\Delta R$ between $obj_1$ and $obj_2$"
+        )
         self.minv_axis_log = hist.axis.Regular(
             1000, 0.01, 3000, name="minv_log", label=r"$m_{obj_{1},obj_{2}}$ [GeV]", 
             transform=hist.axis.transform.log
@@ -532,7 +586,7 @@ class MakeAXOHists (processor.ProcessorABC):
         print("Trigger paths:",self.trigger_paths)
         for trigger in self.trigger_paths:
             print("Trigger",trigger)
-            if trigger[0:3] == "DST":
+            if (trigger[0:3] == "DST") and (not self.config["use_emulated_score"]):
                 assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
                 assert trigger[4:] in events.HLT.fields, f"Error: {trigger[4:]} not in available HLT paths: {events.HLT.fields}"
@@ -557,6 +611,15 @@ class MakeAXOHists (processor.ProcessorABC):
                 if trigger_path == "all_available_triggers":
                     print("all_available_triggers")
                     events_trig = events
+                elif ("DST_PFScouting_AXO" in trigger_path) and self.config["use_emulated_score"]:
+                    print(trigger_path + " (emulated)")
+                    match = re.search(r"(AXO\w+)", trigger_path)
+                    axo_trigger_name = match(0)
+                    if self.axo_version=="v3":
+                        events_trig = events[events.axol1tl.score_v3 > self.axo_thresholds[axo_trigger_name]]
+                    elif self.axo_version=="v4":
+                        events_trig = events[events.axol1tl.score_v4 > self.axo_thresholds[axo_trigger_name]]
+                    else: raise NotImplementedError(f"axo version {self.axo_version} not implemented")
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
@@ -703,7 +766,10 @@ def main():
     client.upload_file("./ScoutingNanoAODSchema.py");
     client.upload_file("./utils.py");
 
-    config = load_config()  
+    config = load_config()
+    
+    if config["use_emulated_score"]:
+        client.upload_file("config.zip");
 
     dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])
     

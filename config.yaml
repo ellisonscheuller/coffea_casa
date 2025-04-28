@@ -4,17 +4,19 @@ json_filename: "filelist_AXO_CICADA.json"  # name of json file containing root f
 dataset_name: "2024I_test"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
+use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
+
 
 # Coffea configurations  --------------------------------------
-n_files: -1                             # number of files to process (-1 for all)
+n_files: -1                               # number of files to process (-1 for all)
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                  # create a preprocessing json file
+do_preprocessing: True                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
-save_branches: False                       # save branches to parquet file
+save_branches: False                      # save branches to parquet file
 branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save output parquet files, if enabled
 
 
@@ -50,13 +52,15 @@ diobject_pairings: # Which invariant mass pairs to consider
     # - ["ScoutingElectron","ScoutingElectron"]
     # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
     # - ["ScoutingElectron", "ScoutingMuonVtx"]
+    # - ["ScoutingPFJet", "ScoutingPhoton"]
+
 
     
 # Histograms to make ---------------------------------------
 histograms_1d:
     # per_event: # histograms to make per event
     # - "anomaly_score"
-    # - "ht"
+    - "ht"
     # - "met"
     # - "mult"
     # - "pt"
@@ -75,6 +79,7 @@ histograms_1d:
     # - "pt"
     # - "eta"
     # - "phi"
+    # - "deltaR"
     
 
 histograms_2d: 
@@ -117,18 +122,17 @@ histograms_2d:
     #   y_category: "per_object_type"
     #   y_var: "pt"
 
+    # anomaly score vs per-object pt
+    # - x_category: "per_event"
+    #   x_var: "anomaly_score"
+    #   y_category: "per_object"
+    #   y_var: "pt"
+
     # object multiplicity vs object multiplicity
     # - x_category: "per_object_type"
     #   x_var: "mult"
     #   y_category: "per_object_type"
     #   y_var: "mult"
-
-      
-# histograms_2d: # 
-#     - ["anomaly_score","ht"]
-#     - ["anomaly_score","met"]
-#     - ["anomaly_score",["diobject","m"]]
-
 
 objects_max_i:  # number of objects to plot for pt ordered object plotting
     "ScoutingPFJet" : 4
