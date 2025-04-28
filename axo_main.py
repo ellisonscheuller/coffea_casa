@@ -514,10 +514,17 @@ class MakeAXOHists (processor.ProcessorABC):
 
             # Load the CSV into memory
             self.axo_thresholds = {}
-            with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])            
+            if "paper" in axo_version: # Andrew's CICADA L1 ntuples (emulate hw threshold)
+                version = axo_version[:-6]
+                with open(f"config/axo_thresholds_{version}.csv", newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        self.axo_thresholds[row["L1 Seed"]] = float(row["HW Threshold"]) 
+            else: #ScoutingNanos with AD producer (emulates software thresholds)
+                with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        self.axo_thresholds[row["L1 Seed"]] = float(row["HW Threshold"])  
 
         
         # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 

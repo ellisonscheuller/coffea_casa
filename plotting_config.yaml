@@ -36,6 +36,18 @@ trigger_labels:
     'DST_PFScouting_DoubleMuon' : 'Double Muon'
     'DST_PFScouting_JetHT' : 'Jet HT'
     'DST_PFScouting_ZeroBias' : 'Zero Bias'
+    'L1_ZeroBias' : 'Zero Bias'
+    'L1_ZeroBias_copy' : 'Zero Bias copy'
+    'L1_AXO_Loose' : 'AXO Loose'
+    'L1_AXO_Nominal' : 'AXO Nominal'
+    'L1_AXO_Tight' : 'AXO Tight'
+    'L1_AXO_VLoose' : ' AXO VLoose'
+    'L1_AXO_VTight' : 'AXO VTight'
+    'L1_CICADA_Loose' : 'CICADA Loose'
+    'L1_CICADA_Medium' : 'CICADA Medium'
+    'L1_CICADA_Tight' : ' CICADA Tight'
+    'L1_CICADA_VLoose' : 'CICADA VLoose'
+    'L1_CICADA_VTight' : 'CICADA VTight'
 
 label_templates:
     'totals': # histograms to make per event
@@ -93,6 +105,7 @@ object_level:
        - 'Muon'
 
 rebin:
+    "anomaly_score" : 6
     "l1_ht" : 6
     "l1_met" : 2
     "L1Jet_L1Jet_mass" : 3 #10

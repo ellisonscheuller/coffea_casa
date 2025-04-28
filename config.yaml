@@ -1,10 +1,11 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "filelist_AXO_CICADA.json"  # name of json file containing root file paths
-dataset_name: "2024I_test"            # name of key within json containing dataset
+json_filename: "filelist_AXO_CICADA_17Apr2025.json"  # name of json file containing root file paths
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
-axo_version: "v4"                               # which axo version to use for score hists
-use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
+axo_version: "v4_paper"                               # which axo version to use for score hists
+#use_emulated_score: False       # whether to use emulated axo score instead of the DST paths
+use_emulated_score: True        # whether to use emulated axo score instead of the DST paths
 
 
 # Coffea configurations  --------------------------------------
@@ -12,7 +13,7 @@ n_files: -1                               # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                    # create a preprocessing json file
+do_preprocessing: False #True                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -58,14 +59,14 @@ diobject_pairings: # Which invariant mass pairs to consider
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    # per_event: # histograms to make per event
-    # - "anomaly_score"
+    per_event: # histograms to make per event
+    - "anomaly_score"
     - "ht"
     # - "met"
-    # - "mult"
+    #- "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # # - "ht"
+    # # # - "ht"
     # - "mult"
     # - "pt"
     # - "eta"
@@ -74,8 +75,8 @@ histograms_1d:
     # - "pt"
     # - "eta"
     # - "phi"
-    per_diobject_pair:
-    - "mass"
+    # per_diobject_pair:
+    # - "mass"
     # - "pt"
     # - "eta"
     # - "phi"
@@ -152,21 +153,35 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
 triggers:
     # - 'all_available_triggers'
     # - 'all_l1_triggers'
+    - 'L1_ZeroBias'
+    # - 'L1_ZeroBias_copy'
+    # - 'L1_AXO_Loose'
+    - 'L1_AXO_Nominal'
+    # - 'L1_AXO_Tight'
+    # - 'L1_AXO_VLoose'
+    # - 'L1_AXO_VTight'
+    # - 'L1_CICADA_Loose'
+    # - 'L1_CICADA_Medium'
+    # - 'L1_CICADA_Tight'
+    # - 'L1_CICADA_VLoose'
+    # - 'L1_CICADA_VTight'
+    # - 'L1_HTT280er'
+
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
-    - 'DST_PFScouting_AXONominal'
+    # - 'DST_PFScouting_AXONominal'
     # - 'DST_PFScouting_AXOTight'
     # - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
-    - 'DST_PFScouting_CICADAMedium'
+    # - 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
-    - 'DST_PFScouting_ZeroBias'
+    # - 'DST_PFScouting_ZeroBias'
 
-orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
+orthogonal_trigger: 'L1_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:

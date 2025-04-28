@@ -210,6 +210,11 @@ def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
         hist_values = events_trig.axol1tl.score_v4
     elif axo_version == "v3":
         hist_values = events_trig.axol1tl.score_v3
+    if axo_version == "v4_paper":
+        hist_values = events_trig.axol1tl.v4_AXOScore
+    elif axo_version == "v3_paper":
+        hist_values = events_trig.axol1tl.v3_AXOScore
+    
     return hist_values
 
 def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
