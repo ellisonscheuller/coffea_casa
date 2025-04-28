@@ -517,7 +517,13 @@ class MakeAXOHists (processor.ProcessorABC):
             with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])            
+                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])
+
+            self.cicada_thresholds = {}
+            with open(f"config/cicada_thresholds.csv", newline='') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    self.cicada_thresholds[row["L1 Seed"]] = float(row["Threshold"])
 
         
         # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 
@@ -586,8 +592,12 @@ class MakeAXOHists (processor.ProcessorABC):
         print("Trigger paths:",self.trigger_paths)
         for trigger in self.trigger_paths:
             print("Trigger",trigger)
-            if (trigger[0:3] == "DST") and (not self.config["use_emulated_score"]):
-                assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
+            if (trigger[0:3] == "DST"):
+                if (("AXO" in trigger) or ("CICADA" in trigger)):
+                    if (not self.config["use_emulated_score"]):
+                        assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
+                else:
+                    assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
                 assert trigger[4:] in events.HLT.fields, f"Error: {trigger[4:]} not in available HLT paths: {events.HLT.fields}"
             if trigger[0:2] == "L1":
@@ -613,13 +623,17 @@ class MakeAXOHists (processor.ProcessorABC):
                     events_trig = events
                 elif ("DST_PFScouting_AXO" in trigger_path) and self.config["use_emulated_score"]:
                     print(trigger_path + " (emulated)")
-                    match = re.search(r"(AXO\w+)", trigger_path)
-                    axo_trigger_name = match(0)
-                    if self.axo_version=="v3":
-                        events_trig = events[events.axol1tl.score_v3 > self.axo_thresholds[axo_trigger_name]]
-                    elif self.axo_version=="v4":
-                        events_trig = events[events.axol1tl.score_v4 > self.axo_thresholds[axo_trigger_name]]
-                    else: raise NotImplementedError(f"axo version {self.axo_version} not implemented")
+                    axo_trigger_name = re.search(r"(AXO\w+)", trigger_path)[0]
+                    if self.axo_version not in ["v3", "v4"]:
+                        raise NotImplementedError(f"axo version {self.axo_version} not implemented")
+                    score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
+                    events_trig = events[getattr(events.axol1tl, score_attr) > self.axo_thresholds[axo_trigger_name]]
+                elif ("DST_PFScouting_CICADA" in trigger_path) and self.config["use_emulated_score"]:
+                    print(trigger_path + " (emulated)")
+                    if not self.config["is_l1nano"]:
+                        raise NotImplementedError(f"CICADA score is not implemented in Scouting NanoAOD")
+                    cicada_trigger_name = re.search(r"(CICADA\w+)", trigger_path)[0]
+                    events_trig = events[getattr(events.CICADA2024, CICADAScore) > self.cicada_thresholds[cicada_trigger_name]]
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
