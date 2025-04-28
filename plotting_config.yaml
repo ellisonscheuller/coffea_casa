@@ -52,6 +52,8 @@ trigger_labels:
 label_templates:
     'totals': # histograms to make per event
         'anomaly_score': 'Anomaly Score'
+        'axo_score': 'AXOL1TL HW Anomaly Score'
+        'cicada_score': 'CICADA Anomaly Score'
         'ht': '$H_T$ [GeV]'
         'met': '$p^{miss}_{T}$ [GeV]'
         'mult': 'Total Object Multiplicity'
@@ -105,7 +107,9 @@ object_level:
        - 'Muon'
 
 rebin:
-    "anomaly_score" : 6
+    "anomaly_score" : 10
+    "axo_score" : 10
+    "cicada_score" : 2
     "l1_ht" : 6
     "l1_met" : 2
     "L1Jet_L1Jet_mass" : 3 #10

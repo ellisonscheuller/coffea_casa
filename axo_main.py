@@ -514,7 +514,10 @@ class MakeAXOHists (processor.ProcessorABC):
             with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])
+                    if self.config["is_l1nano"]:
+                        self.axo_thresholds[row["L1 Seed"]] = float(row["HW Threshold"])
+                    else:
+                        self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])
 
             self.cicada_thresholds = {}
             with open(f"config/cicada_thresholds.csv", newline='') as f:
@@ -540,7 +543,7 @@ class MakeAXOHists (processor.ProcessorABC):
             )
         else:
             self.axo_score_axis = hist.axis.Regular(
-                600, 0, 600, name="axo_score", label='AXOL1TL Anomaly Score'
+                2000, 0, 2000, name="axo_score", label='AXOL1TL Anomaly Score'
             )
         self.cicada_score_axis = hist.axis.Regular(
             256, 0, 256, name="cicada_score", label='CICADA Anomaly Score'
@@ -784,7 +787,7 @@ def main():
     client.upload_file("./ScoutingNanoAODSchema.py");
     client.upload_file("./utils.py");
 
-    config = load_config()
+    config, timestamp = load_config()
     
     if config["use_emulated_score"]:
         client.upload_file("config.zip");
@@ -797,7 +800,7 @@ def main():
     print(hist_result)
 
     if config["save_hists"]:
-        save_histogram(hist_result, config["dataset_name"])
+        save_histogram(hist_result, config["dataset_name"],timestamp)
 
     print("Finished")
   

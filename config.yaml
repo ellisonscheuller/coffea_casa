@@ -4,8 +4,8 @@ json_filename: "filelist_AXO_CICADA_17Apr2025.json"  # name of json file contain
 dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                 # whether the files contain axo anomaly score branches
 axo_version: "v4"                # which axo version to use for score hists
-use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
-is_l1nano: False                 # whether files are l1nano format (assumed scouting nano if False)
+use_emulated_score: True        # whether to use emulated axo score instead of the DST paths
+is_l1nano: True                 # whether files are l1nano format (assumed scouting nano if False)
 
 # Coffea configurations  --------------------------------------
 n_files: -1                               # number of files to process (-1 for all)
@@ -161,7 +161,7 @@ triggers:
     # - 'L1_AXO_VLoose'
     # - 'L1_AXO_VTight'
     # - 'L1_CICADA_Loose'
-    # - 'L1_CICADA_Medium'
+    - 'L1_CICADA_Medium'
     # - 'L1_CICADA_Tight'
     # - 'L1_CICADA_VLoose'
     # - 'L1_CICADA_VTight'
@@ -226,8 +226,8 @@ object_cleaning:
 
 
 # Module to run -------------------------------------------
-# module: "default"
-module: "efficiency"
+module: "default"
+# module: "efficiency"
 # module: "purity" 
 # module: "pileup" # TODO: implement
 
