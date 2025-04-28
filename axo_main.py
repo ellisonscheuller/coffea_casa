@@ -645,7 +645,7 @@ class MakeAXOHists (processor.ProcessorABC):
                     if self.cicada_version not in ["2024"]:
                         raise NotImplementedError(f"cicada version {self.cicada_version} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
-                    attr_name = f"CICADA{cicada_version}"
+                    attr_name = f"CICADA{self.cicada_version}"
                     events_trig = events[getattr(getattr(events_trig, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
                 else:
                     print(trigger_path)
