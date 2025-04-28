@@ -1,9 +1,9 @@
-
 from coffea.nanoevents.methods import vector
 from coffea.util import save
 import dask_awkward as dak
 import datetime
 import hist.dask as hda
+from hist import axis
 import json
 import time
 import yaml
@@ -202,14 +202,17 @@ def save_histogram(hist_result, dataset_name):
     save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
-def get_anomaly_score_hist_values(has_scores,axo_version, events_trig):
-    """Returns the anomaly score from events_trig for specified axo_version."""
-    
+def get_axo_score_hist_values(has_scores, axo_version, is_l1nano, events_trig):
+    """Returns the axol1tl anomaly score from events_trig for specified axo_version."""
     assert has_scores, "Error, dataset does not have axol1tl scores"
-    if axo_version == "v4":
-        hist_values = events_trig.axol1tl.score_v4
-    elif axo_version == "v3":
-        hist_values = events_trig.axol1tl.score_v3
+    attr_name = f"{axo_version}_AXOScore" if is_l1nano else f"score_{axo_version}"
+    return getattr(events_trig.axol1tl, attr_name)
+
+def get_cicada_score_hist_values(has_scores, is_l1nano, events_trig):
+    """Returns the cicada anomaly score from events_trig."""
+    
+    assert is_l1nano, "Error, dataset does not have CICADA scores"
+    hist_values = events_trig.CICADA2024.CICADAScore
     return hist_values
 
 def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
@@ -362,14 +365,21 @@ def calculate_observables(self, observables, events):
     }
 
     # calculate per-event observables
-    if "anomaly_score" in observables["per_event"]:
-        observable_dict["per_event"]["anomaly_score"] = get_anomaly_score_hist_values(
+    if "axo_score" in observables["per_event"]:
+        observable_dict["per_event"]["axo_score"] = get_axo_score_hist_values(
             self.has_scores, 
             self.axo_version, 
+            self.config["is_l1nano"],
+            events
+        )
+    if "cicada_score" in observables["per_event"]:
+        observable_dict["per_event"]["cicada_score"] = get_cicada_score_hist_values(
+            self.has_scores, 
+            self.config["is_l1nano"], 
             events
         )
     for observable in observables["per_event"]:
-        if observable!="anomaly_score":
+        if not "_score" in observable:
             for reconstruction_level in self.config["objects"] if self.config["objects"] else []:
                 if reconstruction_level not in observable_dict["per_event"].keys():
                     observable_dict["per_event"][reconstruction_level] = {}

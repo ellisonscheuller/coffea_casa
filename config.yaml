@@ -5,6 +5,7 @@ dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                 # whether the files contain axo anomaly score branches
 axo_version: "v4"                # which axo version to use for score hists
 use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
+is_l1nano: False                 # whether files are l1nano format (assumed scouting nano if False)
 
 # Coffea configurations  --------------------------------------
 n_files: -1                               # number of files to process (-1 for all)
@@ -56,7 +57,8 @@ diobject_pairings: # Which invariant mass pairs to consider
 # Histograms to make ---------------------------------------
 histograms_1d:
     per_event: # histograms to make per event
-    # - "anomaly_score"
+    # - "axo_score"
+    # - "cicada_score"
     - "ht"
     # - "met"
     # - "mult"
@@ -81,47 +83,47 @@ histograms_1d:
 
 histograms_2d: 
 # mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
-# for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or anomaly_score
+# for per_diobject_pair histograms, can only plot against other per_diobject_pair histograms or axo_score
 
     # anomaly score vs diobject mass
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_diobject_pair"
     #   y_var: "mass"
 
     # anomaly score vs event ht
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_event"
     #   y_var: "ht"
 
     # anomaly score vs event MET
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_event"
     #   y_var: "met"
 
     # anomaly score vs event mult
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_event"
     #   y_var: "mult"
 
     # anomaly score vs object mult
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_object_type"
     #   y_var: "mult"
 
     # anomaly score vs object pt
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_object_type"
     #   y_var: "pt"
 
     # anomaly score vs per-object pt
     # - x_category: "per_event"
-    #   x_var: "anomaly_score"
+    #   x_var: "axo_score"
     #   y_category: "per_object"
     #   y_var: "pt"
 
@@ -147,7 +149,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    # - 'all_available_triggers'
+    - 'all_available_triggers'
     # - 'all_l1_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
@@ -162,6 +164,10 @@ triggers:
     - 'DST_PFScouting_DoubleMuon'
     - 'DST_PFScouting_JetHT'
     # - 'DST_PFScouting_ZeroBias'
+    # - 'L1_AXO_Nominal'
+    # - 'L1_CICADA_Medium'
+    # - 'L1_SingleMu22'
+    # - 'L1_HTT280er'
 
 orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
@@ -219,12 +225,6 @@ module: "efficiency"
 #     "L1EGamma": "EG"
 #     "L1Mu": ""L1\mu""
 
-# AXOL1TL Thresholds -------------------------------------------
-axo_thresholds:
-- version: "v3"
-  path: "config/axo_thresholds_v3.csv"
-- version: "v4"
-  path: "config/axo_thresholds_v4.csv"
 
 
 
