@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
 json_filename: "file_list.json"  # name of json file containing root file paths
-dataset_name: "2024I"            # name of key within json containing dataset
+dataset_name: "2024I_10"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4"                               # which axo version to use for score hists
 
@@ -21,16 +21,17 @@ branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save outpu
 # Object configurations ----------------------------------
 # Which objects to process
 objects: 
-    l1:
-    - "L1Jet"
-    - "L1EG"
-    - "L1Mu"
-    # scouting:
+    # l1:
+    # - "L1Jet"
+    # - "L1EG"
+    # - "L1Mu"
+    scouting:
     # - "ScoutingPFJet"
     # - "ScoutingElectron"
     # - "ScoutingMuonNoVtx"
     # - "ScoutingMuonVtx"
     # - "ScoutingPhoton"
+    # - "nScoutingPrimaryVertex"
     # full_reco: # only works on non-scouting datasets
     # - "Jet"
     # - "Electron"
@@ -44,23 +45,23 @@ diobject_pairings: # Which invariant mass pairs to consider
     # - ["L1Jet","L1EG"]
     # - ["L1Jet","L1Mu"]
     
-    scouting:
-    - ["ScoutingPFJet","ScoutingPFJet"]
-    - ["ScoutingElectron","ScoutingElectron"]
-    - ["ScoutingMuonVtx","ScoutingMuonVtx"]
-    - ["ScoutingElectron", "ScoutingMuonVtx"]
+    # scouting:
+    # - ["ScoutingPFJet","ScoutingPFJet"]
+    # - ["ScoutingElectron","ScoutingElectron"]
+    # - ["ScoutingMuonVtx","ScoutingMuonVtx"]
+    # - ["ScoutingElectron", "ScoutingMuonVtx"]
 
     
 # Histograms to make ---------------------------------------
 histograms_1d:
-    per_event: # histograms to make per event
+    # per_event: # histograms to make per event
     # - "anomaly_score"
-    - "ht"
-    - "met"
+    # - "ht"
+    # - "met"
     # - "mult"
     # - "pt"
     # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
+    # # - "ht"
     # - "mult"
     # - "pt"
     # - "eta"
@@ -69,8 +70,8 @@ histograms_1d:
     # - "pt"
     # - "eta"
     # - "phi"
-    # per_diobject_pair:
-    # - "mass"
+    per_diobject_pair:
+    - "mass"
     # - "pt"
     # - "eta"
     # - "phi"
@@ -154,12 +155,12 @@ triggers:
     # - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
-    # - 'DST_PFScouting_CICADAMedium'
+    - 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
-    - 'DST_PFScouting_DoubleMuon'
-    - 'DST_PFScouting_JetHT'
-    # - 'DST_PFScouting_ZeroBias'
+    # - 'DST_PFScouting_DoubleMuon'
+    # - 'DST_PFScouting_JetHT'
+    - 'DST_PFScouting_ZeroBias'
 
 orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
 
@@ -181,8 +182,9 @@ object_cleaning:
         pt: [5.0, null] # GeV
         eta: [-1.44, 1.44]
     "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
-        pt: [0.1, null] # GeV
-        eta: [-5, 5]
+        #pt: [0.1, null] # GeV
+        pt: [30, 999.5] # GeV
+        eta: [-1.3, 1.3]
     "L1EG": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
         pt: [0.1, null] # GeV
         eta: [-2.5, 2.5]

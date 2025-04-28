@@ -1,6 +1,7 @@
 cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
-normalized :  False #True #
-log_scale : True #False
+normalized : False #True #
+log_scale : True 
+#log_scale : False
 
 module : "efficiency"
 #module : "default"
@@ -54,8 +55,8 @@ label_templates:
         'eta': '{} ${}$ $\eta$'
         'phi': '{} ${}$ $\phi$'
     'diobject':
-        'mass': '$m_{{{}{}}} [GeV]$'
-        'pt':  '$p_{{T{}{}}} [GeV]$'
+        'mass': '$m_{{{}{}}}\ [GeV]$'
+        'pt':  '$p_{{T{}{}}}\ [GeV]$'
         'eta': '$\eta_{{{}{}}}$'
         'phi': '$\phi_{{{}{}}}$'
 
@@ -68,6 +69,7 @@ object_label_templates:
    'ScoutingMuonNoVtx': '\mu_{{no vtx}} '
    'ScoutingMuonVtx': '\mu '
    'ScoutingPhoton' : '\gamma '
+   'nScoutingPrimaryVertex' : 'Scouting\ Primary\ Vertice'
    'Jet': 'Jet'
    'Electron': 'e'
    'Muon': '\mu '
@@ -83,6 +85,7 @@ object_level:
        - 'ScoutingMuonNoVtx'
        - 'ScoutingMuonVtx'
        - 'ScoutingPhoton' 
+       - 'nScoutingPrimaryVertex'
     'full_reco':
        - 'Jet'
        - 'Electron'
@@ -91,14 +94,14 @@ object_level:
 rebin:
     "l1_ht" : 6
     "l1_met" : 2
-    "L1Jet_L1Jet_mass" : 10
+    "L1Jet_L1Jet_mass" : 3 #10
     "L1Mu_L1Mu_mass" : 2
     "L1EG_L1EG_mass" : 2
     "L1Mu_L1Mu_pt" : 2
     "L1Jet_L1EG_mass" : 10
     "L1Jet_L1Mu_mass" : 10
-    "ScoutingPFJet_ScoutingPFJet_mass" : 10
+    "ScoutingPFJet_ScoutingPFJet_mass" : 20
     "ScoutingElectron_ScoutingElectron_mass" : 2
-    "ScoutingMuonVtx_ScoutingMuonVtx_mass" : 2
+    "ScoutingMuonVtx_ScoutingMuonVtx_mass" : 1
     
 
