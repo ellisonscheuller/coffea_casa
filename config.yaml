@@ -4,8 +4,8 @@ json_filename: "filelist_AXO_CICADA_17Apr2025.json"  # name of json file contain
 dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                          # whether the files contain axo anomaly score branches
 axo_version: "v4_paper"                               # which axo version to use for score hists
-#use_emulated_score: False       # whether to use emulated axo score instead of the DST paths
-use_emulated_score: True        # whether to use emulated axo score instead of the DST paths
+use_emulated_score: False       # whether to use emulated axo score instead of the DST paths
+#use_emulated_score: True        # whether to use emulated axo score instead of the DST paths
 
 
 # Coffea configurations  --------------------------------------
