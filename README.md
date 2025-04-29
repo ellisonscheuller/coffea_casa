@@ -28,3 +28,5 @@ Open up a terminal and follow [these instructions](https://twiki.cern.ch/twiki/b
 When generating the x509 proxy, use the following commands:
 `voms-proxy-init --voms cms --vomses /etc/vomses`. 
 Then change the parameter `branch_writing_path` in `config.yaml` and set `save_branches` to `True`.
+
+Note for developers: if you alter any of the threshold csv files in `config`, please run `zip -r config.zip config` and also commit the zip file.
