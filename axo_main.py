@@ -638,8 +638,6 @@ class MakeAXOHists (processor.ProcessorABC):
                         raise NotImplementedError(f"axo version {self.axo_version} not implemented")
                     score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
                     threshold = self.axo_thresholds[axo_trigger_name]
-                    if self.config["is_l1nano"]:
-                        threshold*=16.0
                     events_trig = events[getattr(events.axol1tl, score_attr) > threshold]
                 elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
                     print(trigger_path + " (emulated)")
