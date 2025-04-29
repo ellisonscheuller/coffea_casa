@@ -163,7 +163,7 @@ def draw_efficiency(hist_in=None, ax=None, orthogonal_trigger="", trigger="", ob
             ortho_hist = hist_in[:, orthogonal_trigger, hist.rebin(rebin)] 
             int_hist = hist_in[:, trigger, hist.rebin(rebin)] 
 
-            # Automatic rebinning 
+            # #Automatic rebinning 
             # n = ortho_hist.sum().value # number of entries in hist  
             # n_sturges_bins = int(np.ceil(np.log2(n) + 1))
             # current_n_bins = ortho_hist.shape[1]

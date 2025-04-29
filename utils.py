@@ -183,7 +183,7 @@ def load_config(config_path="config.yaml"):
     backup_path = f"config_{dataset}_{timestamp}.yaml"
     shutil.copy(config_path, backup_path)
 
-    return config
+    return config, timestamp
 
 def load_dataset(json_filename, dataset_name, n_files):
     """Loads JSON dataset and filters files based on n_files limit."""
@@ -196,9 +196,9 @@ def load_dataset(json_filename, dataset_name, n_files):
     # Use dictionary slicing for efficiency
     return {dataset_name: {'files': dict(list(dataset[dataset_name]['files'].items())[:n_files])}}
 
-def save_histogram(hist_result, dataset_name):
+def save_histogram(hist_result, dataset_name,timestamp):
     """Saves the histogram to a pickle file."""
-    filename = f'hist_result_{dataset_name}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pkl'
+    filename = f'hist_result_{dataset_name}_{timestamp}.pkl'
     save(hist_result, filename)
     print(f"Histogram saved as {filename}")
 
@@ -276,7 +276,8 @@ def get_per_object_type_hist_values(objects, histogram):
     """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
     level_map = {
         "ht": lambda: dak.sum(objects.pt,axis=1),
-        "mult": lambda: dak.num(objects),
+        #"mult": lambda: dak.num(objects),
+        "mult": lambda: objects,
         "pt": lambda:  dak.flatten(objects.pt),
         "eta": lambda:  dak.flatten(objects.eta),
         "phi": lambda: dak.flatten(objects.phi),
@@ -298,9 +299,11 @@ def clean_objects(objects, cuts, reconstruction_level=None):
     """Apply upper and lower-bound cuts on different object variables based on reconstruction level."""
 
     if reconstruction_level == "l1":
+        objects = objects[objects.bx==0] # Filter for bunch crossing == 0 
         bx_mask = (objects.bx == 0) # Filter for bunch crossing == 0 
     else:
         bx_mask = dak.ones_like(objects.pt, dtype=bool)
+
 
     # Find the first valid branch to initialize the mask
     reference_branch = next((br for br in cuts if hasattr(objects, br)), None)
@@ -309,6 +312,7 @@ def clean_objects(objects, cuts, reconstruction_level=None):
 
     # Initialize mask with all values set to True
     mask = dak.ones_like(getattr(objects, reference_branch), dtype=bool)
+    
 
     for br, cut in cuts.items():
         if cut and hasattr(objects, br):  # Ensure branch exists in objects
@@ -412,7 +416,8 @@ def calculate_observables(self, observables, events):
                         
             # Get objects and apply object level cleaning
             objects = getattr(events, object_type)
-            objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
+            if object_type in self.config["object_cleaning"]:
+                objects = clean_objects(objects, self.config["object_cleaning"][object_type], reconstruction_level)
             
             for observable in observables["per_object_type"]:
                 observable_dict["per_object_type"][reconstruction_level][object_type][observable] = get_per_object_type_hist_values(
