@@ -206,13 +206,17 @@ def get_axo_score_hist_values(has_scores, axo_version, is_l1nano, events_trig):
     """Returns the axol1tl anomaly score from events_trig for specified axo_version."""
     assert has_scores, "Error, dataset does not have axol1tl scores"
     attr_name = f"{axo_version}_AXOScore" if is_l1nano else f"score_{axo_version}"
-    return getattr(events_trig.axol1tl, attr_name)
+    axo_score = getattr(events_trig.axol1tl, attr_name)
+    if is_l1nano: # l1 nano files have HW score
+        axo_score = axo_score / 16.0
+    return axo_score
 
-def get_cicada_score_hist_values(has_scores, is_l1nano, events_trig):
-    """Returns the cicada anomaly score from events_trig."""
-    
+def get_cicada_score_hist_values(has_scores, cicada_version, is_l1nano, events_trig):
+    """Returns the cicada anomaly score from events_trig for specified cicada_version."""
     assert is_l1nano, "Error, dataset does not have CICADA scores"
-    hist_values = events_trig.CICADA2024.CICADAScore
+    attr_name = f"CICADA{cicada_version}"
+    cicada = getattr(events_trig, attr_name)
+    hist_values = cicada.CICADAScore
     return hist_values
 
 def get_per_event_hist_values(reconstruction_level, histogram, events_trig):
@@ -379,6 +383,7 @@ def calculate_observables(self, observables, events):
     if "cicada_score" in observables["per_event"]:
         observable_dict["per_event"]["cicada_score"] = get_cicada_score_hist_values(
             self.has_scores, 
+            self.cicada_version,
             self.config["is_l1nano"], 
             events
         )

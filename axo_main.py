@@ -82,6 +82,7 @@ def process_histograms(dataset_runnable, config):
             objects=config["objects"],
             has_scores=config["has_scores"], 
             axo_version=config["axo_version"],
+            cicada_version=config["cicada_version"],
             config=config
         ),
         max_chunks(dataset_runnable, config["coffea_max_chunks"]),
@@ -491,6 +492,7 @@ class MakeAXOHists (processor.ProcessorABC):
         objects=[],
         has_scores=True,
         axo_version="v4",
+        cicada_version="2024",
         thresholds=None, 
         object_dict=None,
         config=None
@@ -500,6 +502,7 @@ class MakeAXOHists (processor.ProcessorABC):
         self.objects = objects
         self.has_scores = has_scores
         self.axo_version = axo_version
+        self.cicada_version = cicada_version
         self.config = config
 
         if config["use_emulated_score"]:
@@ -520,7 +523,7 @@ class MakeAXOHists (processor.ProcessorABC):
                         self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])
 
             self.cicada_thresholds = {}
-            with open(f"config/cicada_thresholds.csv", newline='') as f:
+            with open(f"config/cicada_thresholds_{cicada_version}.csv", newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     self.cicada_thresholds[row["L1 Seed"]] = float(row["Threshold"])
@@ -634,13 +637,19 @@ class MakeAXOHists (processor.ProcessorABC):
                     if self.axo_version not in ["v3", "v4"]:
                         raise NotImplementedError(f"axo version {self.axo_version} not implemented")
                     score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
-                    events_trig = events[getattr(events.axol1tl, score_attr) > self.axo_thresholds[axo_trigger_name]]
+                    threshold = self.axo_thresholds[axo_trigger_name]
+                    if self.config["is_l1nano"]:
+                        threshold*=16.0
+                    events_trig = events[getattr(events.axol1tl, score_attr) > threshold]
                 elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     if not self.config["is_l1nano"]:
                         raise NotImplementedError(f"CICADA score is not implemented in Scouting NanoAOD")
+                    if self.cicada_version not in ["2024"]:
+                        raise NotImplementedError(f"cicada version {self.cicada_version} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
-                    events_trig = events[getattr(events.CICADA2024, "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
+                    attr_name = f"CICADA{self.cicada_version}"
+                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
