@@ -4,7 +4,7 @@ json_filename: "file_list.json"  # name of json file containing root file paths
 dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                 # whether the files contain axo anomaly score branches
 axo_version: "v4"                # which axo version to use when using emulated values
-cicada_version: "2024"            # which cicada version to use when using emulated values
+cicada_version: "2024"           # which cicada version to use when using emulated values
 use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
 is_l1nano: False                 # whether files are l1nano format (assumed scouting nano if False)
 
@@ -58,18 +58,18 @@ diobject_pairings: # Which invariant mass pairs to consider
 # Histograms to make ---------------------------------------
 histograms_1d:
     per_event: # histograms to make per event
-    # - "axo_score"
+    - "axo_score"
     # - "cicada_score"
     - "ht"
     # - "met"
     # - "mult"
     # - "pt"
-    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
-    # - "mult"
-    # - "pt"
-    # - "eta"
-    # - "phi"
+    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    - "ht"
+    - "mult"
+    - "pt"
+    - "eta"
+    - "phi"
     # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
     # - "pt"
     # - "eta"
@@ -115,6 +115,11 @@ histograms_2d:
     #   x_var: "axo_score"
     #   y_category: "per_object_type"
     #   y_var: "mult"
+      
+    # - x_category: "per_event"
+    #   x_var: "cicada_score"
+    #   y_category: "per_object_type"
+    #   y_var: "mult"
 
     # anomaly score vs object pt
     # - x_category: "per_event"
@@ -150,7 +155,7 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
     
 # Which triggers to save (comment out unwanted or add) -----------------------
 triggers:
-    - 'all_available_triggers'
+    # - 'all_available_triggers'
     # - 'all_l1_triggers'
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
@@ -166,11 +171,12 @@ triggers:
     - 'DST_PFScouting_JetHT'
     # - 'DST_PFScouting_ZeroBias'
     # - 'L1_AXO_Nominal'
+    # - 'L1_ZeroBias'
     # - 'L1_CICADA_Medium'
     # - 'L1_SingleMu22'
     # - 'L1_HTT280er'
 
-orthogonal_trigger: 'DST_PFScouting_ZeroBias' # for efficiency studies
+orthogonal_trigger: 'L1_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:

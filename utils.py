@@ -208,7 +208,7 @@ def get_axo_score_hist_values(has_scores, axo_version, is_l1nano, events_trig):
     attr_name = f"{axo_version}_AXOScore" if is_l1nano else f"score_{axo_version}"
     axo_score = getattr(events_trig.axol1tl, attr_name)
     if is_l1nano: # l1 nano files have HW score
-        axo_score/=16.0
+        axo_score = axo_score / 16.0
     return axo_score
 
 def get_cicada_score_hist_values(has_scores, cicada_version, is_l1nano, events_trig):

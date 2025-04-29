@@ -637,7 +637,7 @@ class MakeAXOHists (processor.ProcessorABC):
                     threshold = self.axo_thresholds[axo_trigger_name]
                     if self.config["is_l1nano"]:
                         threshold*=16.0
-                    events_trig = events[getattr(events.axol1tl, score_attr) > self.axo_thresholds[axo_trigger_name]]
+                    events_trig = events[getattr(events.axol1tl, score_attr) > threshold]
                 elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     if not self.config["is_l1nano"]:
@@ -646,7 +646,7 @@ class MakeAXOHists (processor.ProcessorABC):
                         raise NotImplementedError(f"cicada version {self.cicada_version} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
                     attr_name = f"CICADA{self.cicada_version}"
-                    events_trig = events[getattr(getattr(events_trig, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
+                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
