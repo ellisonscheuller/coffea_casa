@@ -69,8 +69,11 @@ def find_diobjects(obj_coll1, obj_coll2, reconstruction_level, opposite_charge=F
         if hasattr(obj_coll1, "charge") and hasattr(obj_coll2, "charge"):
             charges1 = obj_coll1.charge
             charges2 = obj_coll2.charge
+        elif hasattr(obj_coll1, "hwCharge") and hasattr(obj_coll2, "hwCharge"):
+            charges1 = dak.where(obj_coll1.hwCharge == 1, -1, 1)
+            charges2 = dak.where(obj_coll2.hwCharge == 1, -1, 1)
         else:
-            raise AttributeError("One or both object collections do not have a 'charge' attribute.")
+            raise AttributeError("One or both object collections do not have a 'charge' or 'hwCharge' attribute.")
 
     objs1 = create_four_vectors(obj_coll1, reconstruction_level)
     objs2 = create_four_vectors(obj_coll2, reconstruction_level)
@@ -451,7 +454,7 @@ def calculate_observables(self, observables, events):
             if object_type_1 == object_type_2: # same object
                 objects = getattr(events, object_type_1)
                 objects = clean_objects(objects, self.config["object_cleaning"][object_type_1])
-                if "Muon" in object_type_1:
+                if "Mu" in object_type_1:
                     di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level, opposite_charge=True)
                 else:
                     di_objects = find_diobjects(objects[:,0:1], objects[:,1:2], reconstruction_level)
