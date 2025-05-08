@@ -1,7 +1,7 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "filelist_AXO_CICADA_17Apr2025.json"  # name of json file containing root file paths
-dataset_name: "2024I"            # name of key within json containing dataset
+json_filename: "file_list.json"  # name of json file containing root file paths
+dataset_name: "2024I_10"            # name of key within json containing dataset
 has_scores: True                 # whether the files contain axo anomaly score branches
 axo_version: "v4"                # which axo version to use when using emulated values
 cicada_version: "2024"           # which cicada version to use when using emulated values
@@ -13,7 +13,7 @@ n_files: -1                               # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: False #True                    # create a preprocessing json file
+do_preprocessing: True                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -26,9 +26,9 @@ branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save outpu
 objects: 
     l1:
     - "L1Jet"
-    - "L1EG"
-    - "L1Mu"
-    #scouting:
+    # - "L1EG"
+    # - "L1Mu"
+    # scouting:
     # - "ScoutingPFJet"
     # - "ScoutingElectron"
     # - "ScoutingMuonNoVtx"
@@ -41,8 +41,8 @@ objects:
     # - "Muon"
 
 diobject_pairings: # Which invariant mass pairs to consider
-    l1:
-    - ["L1Jet","L1Jet"]
+    # l1:
+    # - ["L1Jet","L1Jet"]
     # - ["L1EG","L1EG"]
     # - ["L1Mu","L1Mu"]
     # - ["L1Jet","L1EG"]
@@ -82,7 +82,12 @@ histograms_1d:
     # - "eta"
     # - "phi"
     # - "deltaR"
-    
+    # - "obj1_pt"
+    # - "obj2_pt"
+    # - "obj1_eta"
+    # - "obj2_eta"
+    # - "obj1_phi"
+    # - "obj2_phi"
 
 histograms_2d: 
 # mostly implemented: cannot produce histograms mixed between `per_object`/`per_object_type` and `per_diobject_pair`
@@ -159,18 +164,19 @@ objects_max_i:  # number of objects to plot for pt ordered object plotting
 triggers:
     # - 'all_available_triggers'
     # - 'all_l1_triggers'
-    - 'L1_ZeroBias'
+    # - 'L1_ZeroBias'
     # - 'L1_ZeroBias_copy'
     # - 'L1_AXO_Loose'
-    - 'L1_AXO_Nominal'
+    # - 'L1_AXO_Nominal'
     # - 'L1_AXO_Tight'
     # - 'L1_AXO_VLoose'
     # - 'L1_AXO_VTight'
     # - 'L1_CICADA_Loose'
-    - 'L1_CICADA_Medium'
+    # - 'L1_CICADA_Medium'
     # - 'L1_CICADA_Tight'
     # - 'L1_CICADA_VLoose'
     # - 'L1_CICADA_VTight'
+    # - 'L1_SingleMu22'
     # - 'L1_HTT280er'
 
     # - 'DST_PFScouting_AXOVLoose'
@@ -185,7 +191,7 @@ triggers:
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
     # - 'DST_PFScouting_JetHT'
-    # - 'DST_PFScouting_ZeroBias'
+    - 'DST_PFScouting_ZeroBias'
     # - 'L1_AXO_Nominal'
     # - 'L1_ZeroBias'
     # - 'L1_CICADA_Medium'

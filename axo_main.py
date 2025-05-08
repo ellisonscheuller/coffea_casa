@@ -174,13 +174,15 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         object_type_2 = pairing[1]
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
+                            if "obj" in histogram: axis_name = histogram.split("_", 1)[1]
+                            else: axis_name = histogram
                             fill_hist_1d(
                                 hist_dict,
                                 f"{object_type_1}_{object_type_2}_{histogram}", 
                                 dataset, 
                                 observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram], 
                                 trigger_path, 
-                                histogram
+                                axis_name
                             )
                             if self.config["save_branches"]:
                                 branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram]
@@ -325,20 +327,26 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         object_type_1 = pairing[0]
                         object_type_2 = pairing[1]
 
+                        axis_name_x = x_var
+                        axis_name_y = y_var
                         if x_cat=="per_diobject_pair":
                             x_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][x_var]
+                            if "obj" in x_var: axis_name_x = x_var.split("_", 1)[1]
                         if y_cat=="per_diobject_pair":
                             y_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][y_var]
+                            if "obj" in y_var: axis_name_y = y_var.split("_", 1)[1]
 
                         hist_name=""
                         if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
                         if (x_cat=="per_diobject_pair") and ("_score" in y_var):
+                            y_obs = y_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                         if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
+                            x_obs = x_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                         if hist_name!="":
-                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, axis_name_x, axis_name_y)
                             
         return hist_dict, branch_save_dict
        
@@ -388,7 +396,9 @@ def initialize_hist_dict(self,hist_dict):
                         if self.config["diobject_pairings"][reconstruction_level] else []:
                         obj_1, obj_2 = pairing[0],pairing[1]
                         hist_name = f"{obj_1}_{obj_2}_{histogram}"
-                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+                        if "obj" in histogram: axis_name = histogram.split("_", 1)[1]
+                        else: axis_name = histogram
+                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name], hist_name=hist_name)
 
     for entry in self.config["histograms_2d"] \
         if self.config.get("histograms_2d") else []:
@@ -472,6 +482,11 @@ def initialize_hist_dict(self,hist_dict):
                     object_type_2 = pairing[1]
 
                     hist_name=""
+                    axis_name_x = x_var
+                    axis_name_y = y_var
+                    if "obj" in x_var: axis_name_x = x_var.split("_", 1)[1]
+                    if "obj" in y_var: axis_name_y = y_var.split("_", 1)[1]
+                        
                     if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                         hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
                     if (x_cat=="per_diobject_pair") and ("_score" in y_var):
@@ -479,7 +494,7 @@ def initialize_hist_dict(self,hist_dict):
                     if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
                         hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                     if hist_name!="":
-                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x], axis_map[axis_name_y], hist_name)
                         
     return hist_dict
 
