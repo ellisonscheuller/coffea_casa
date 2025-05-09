@@ -279,8 +279,8 @@ def get_per_object_type_hist_values(objects, histogram):
     """Retrieve histogram values based on reconstruction level and histogram type. Uses a dictionary lookup with lambda functions to avoid unnecessary computations."""
     level_map = {
         "ht": lambda: dak.sum(objects.pt,axis=1),
-        #"mult": lambda: dak.num(objects),
-        "mult": lambda: objects,
+        "mult": lambda: dak.num(objects),
+        # "mult": lambda: objects,
         "pt": lambda:  dak.flatten(objects.pt),
         "eta": lambda:  dak.flatten(objects.eta),
         "phi": lambda: dak.flatten(objects.phi),
@@ -377,19 +377,23 @@ def calculate_observables(self, observables, events):
 
     # calculate per-event observables
     if "axo_score" in observables["per_event"]:
-        observable_dict["per_event"]["axo_score"] = get_axo_score_hist_values(
-            self.has_scores, 
-            self.axo_version, 
-            self.config["is_l1nano"],
-            events
-        )
+        observable_dict["per_event"]["axo_score"] = {}
+        for axo_version in self.config["axo_versions"]:
+            observable_dict["per_event"]["axo_score"][axo_version] = get_axo_score_hist_values(
+                self.config["has_scores"], 
+                axo_version, 
+                self.config["is_l1nano"],
+                events
+            )
     if "cicada_score" in observables["per_event"]:
-        observable_dict["per_event"]["cicada_score"] = get_cicada_score_hist_values(
-            self.has_scores, 
-            self.cicada_version,
-            self.config["is_l1nano"], 
-            events
-        )
+        observable_dict["per_event"]["cicada_score"] = {}
+        for cicada_version in self.config["cicada_versions"]:
+            observable_dict["per_event"]["cicada_score"][cicada_version] = get_cicada_score_hist_values(
+                self.config["has_scores"], 
+                cicada_version,
+                self.config["is_l1nano"], 
+                events
+            )
     for observable in observables["per_event"]:
         if not "_score" in observable:
             for reconstruction_level in self.config["objects"] if self.config["objects"] else []:
@@ -466,7 +470,10 @@ def calculate_observables(self, observables, events):
                 di_objects = find_diobjects(objects_1[:,0:1],objects_2[:,0:1], reconstruction_level)
                     
             for observable in observables["per_diobject_pair"]:
-                observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(di_objects[observable])
+                diobj_array = di_objects[observable]
+                valid_event_mask = (dak.num(diobj_array))>0
+                observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][observable] = dak.flatten(diobj_array)
+                observable_dict["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"] = valid_event_mask
                         
     return observable_dict
 

@@ -80,9 +80,6 @@ def process_histograms(dataset_runnable, config):
         MakeAXOHists(
             trigger_paths=config["triggers"],
             objects=config["objects"],
-            has_scores=config["has_scores"], 
-            axo_version=config["axo_version"],
-            cicada_version=config["cicada_version"],
             config=config
         ),
         max_chunks(dataset_runnable, config["coffea_max_chunks"]),
@@ -115,15 +112,26 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
             if histogram_group == "per_event": # event level histograms
                 for histogram in histograms if histograms else []:
                     print("Histogram type: ",histogram)
-                    if "_score" in histogram:
-                        fill_hist_1d(
-                            hist_dict, 
-                            histogram, 
-                            dataset, 
-                            observable_calculations["per_event"][histogram], 
-                            trigger_path, 
-                            histogram
-                        )
+                    if histogram=="axo_score":
+                        for axo_version in self.config["axo_versions"]:
+                            fill_hist_1d(
+                                hist_dict, 
+                                f"{histogram}_{axo_version}",
+                                dataset, 
+                                observable_calculations["per_event"][histogram][axo_version], 
+                                trigger_path, 
+                                f"{histogram}_{axo_version}"
+                            )
+                    elif histogram=="cicada_score":
+                        for cicada_version in self.config["cicada_versions"]:
+                            fill_hist_1d(
+                                hist_dict, 
+                                f"{histogram}_{cicada_version}", 
+                                dataset, 
+                                observable_calculations["per_event"][histogram][cicada_version], 
+                                trigger_path, 
+                                f"{histogram}_{cicada_version}"
+                            )
                     else: 
                         for reconstruction_level in self.config["objects"] \
                             if self.config["objects"] else []:
@@ -174,13 +182,15 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         object_type_2 = pairing[1]
                         for histogram in histograms:
                             print("Histogram type: ",histogram)
+                            if "obj" in histogram: axis_name = histogram.split("_", 1)[1]
+                            else: axis_name = histogram
                             fill_hist_1d(
                                 hist_dict,
                                 f"{object_type_1}_{object_type_2}_{histogram}", 
                                 dataset, 
                                 observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram], 
                                 trigger_path, 
-                                histogram
+                                axis_name
                             )
                             if self.config["save_branches"]:
                                 branch_save_dict[f"{object_type_1}_{object_type_2}_{histogram}"] = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][histogram]
@@ -325,28 +335,32 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         object_type_1 = pairing[0]
                         object_type_2 = pairing[1]
 
+                        axis_name_x = x_var
+                        axis_name_y = y_var
                         if x_cat=="per_diobject_pair":
                             x_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][x_var]
+                            if "obj" in x_var: axis_name_x = x_var.split("_", 1)[1]
                         if y_cat=="per_diobject_pair":
                             y_obs = observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"][y_var]
+                            if "obj" in y_var: axis_name_y = y_var.split("_", 1)[1]
 
                         hist_name=""
                         if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
                         if (x_cat=="per_diobject_pair") and ("_score" in y_var):
+                            y_obs = y_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                         if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
+                            x_obs = x_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                         if hist_name!="":
-                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
+                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, axis_name_x, axis_name_y)
                             
         return hist_dict, branch_save_dict
        
 def initialize_hist_dict(self,hist_dict):
     # Axis mapping 
     axis_map = {
-        'axo_score': self.axo_score_axis,
-        'cicada_score': self.cicada_score_axis,
         'ht': self.ht_axis,
         'met': self.met_axis,
         'mult': self.mult_axis,
@@ -360,13 +374,23 @@ def initialize_hist_dict(self,hist_dict):
         'mass': self.mass_axis,
         'deltaR': self.deltaR_axis
     }
+    for axo_version in self.config["axo_versions"]:
+        axis_map[f'axo_score_{axo_version}'] = self.axo_score_axes[axo_version]
+    for cicada_version in self.config["cicada_versions"]:
+        axis_map[f'cicada_score_{cicada_version}'] = self.cicada_score_axes[cicada_version]
     for histogram_group, histograms in self.config["histograms_1d"].items() \
         if self.config["histograms_1d"] else []:  # Process each histogram according to its group
         for histogram in histograms if histograms else []: # Variables to plot
-            if "_score" in histogram: # Score doesn't depend on reco level
-                hist_name = f"{histogram}"  
-                hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name) 
-                continue
+            if histogram=="axo_score":
+                for axo_version in self.config["axo_versions"]:
+                    hist_name = f"{histogram}_{axo_version}"  
+                    hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[hist_name], hist_name=hist_name) 
+                    continue
+            if histogram=="cicada_score":
+                for cicada_version in self.config["cicada_versions"]:
+                    hist_name = f"{histogram}_{cicada_version}"  
+                    hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[hist_name], hist_name=hist_name) 
+                    continue
             for reconstruction_level in self.config["objects"] \
                 if self.config["objects"] else []: # Loop over different object reconstruction levels
                 if histogram_group == "per_event" and not ("_score" in histogram): # Per event ---
@@ -388,7 +412,9 @@ def initialize_hist_dict(self,hist_dict):
                         if self.config["diobject_pairings"][reconstruction_level] else []:
                         obj_1, obj_2 = pairing[0],pairing[1]
                         hist_name = f"{obj_1}_{obj_2}_{histogram}"
-                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[histogram], hist_name=hist_name)
+                        if "obj" in histogram: axis_name = histogram.split("_", 1)[1]
+                        else: axis_name = histogram
+                        hist_dict = create_hist_1d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name], hist_name=hist_name)
 
     for entry in self.config["histograms_2d"] \
         if self.config.get("histograms_2d") else []:
@@ -472,6 +498,11 @@ def initialize_hist_dict(self,hist_dict):
                     object_type_2 = pairing[1]
 
                     hist_name=""
+                    axis_name_x = x_var
+                    axis_name_y = y_var
+                    if "obj" in x_var: axis_name_x = x_var.split("_", 1)[1]
+                    if "obj" in y_var: axis_name_y = y_var.split("_", 1)[1]
+                        
                     if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                         hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
                     if (x_cat=="per_diobject_pair") and ("_score" in y_var):
@@ -479,7 +510,7 @@ def initialize_hist_dict(self,hist_dict):
                     if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
                         hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
                     if hist_name!="":
-                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x], axis_map[axis_name_y], hist_name)
                         
     return hist_dict
 
@@ -490,9 +521,6 @@ class MakeAXOHists (processor.ProcessorABC):
         self, 
         trigger_paths=[],
         objects=[],
-        has_scores=True,
-        axo_version="v4",
-        cicada_version="2024",
         thresholds=None, 
         object_dict=None,
         config=None
@@ -500,12 +528,9 @@ class MakeAXOHists (processor.ProcessorABC):
 
         self.trigger_paths = trigger_paths
         self.objects = objects
-        self.has_scores = has_scores
-        self.axo_version = axo_version
-        self.cicada_version = cicada_version
         self.config = config
 
-        if config["use_emulated_score"]:
+        if config["use_axo_emulated_score"] or config["use_cicada_emulated_score"]:
             # Unzip only once per worker (guard with a flag)
             if not os.path.exists("config"):
                 with zipfile.ZipFile("config.zip", "r") as zip_ref:
@@ -513,20 +538,23 @@ class MakeAXOHists (processor.ProcessorABC):
 
             # Load the CSV into memory
             self.axo_thresholds = {}
-
-            with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    if self.config["is_l1nano"]:
-                        self.axo_thresholds[row["L1 Seed"]] = float(row["HW Threshold"])
-                    else:
-                        self.axo_thresholds[row["L1 Seed"]] = float(row["Threshold"])
+            for axo_version in config["axo_versions"]:
+                self.axo_thresholds[axo_version] = {}
+                with open(f"config/axo_thresholds_{axo_version}.csv", newline='') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        if self.config["is_l1nano"]:
+                            self.axo_thresholds[axo_version][row["L1 Seed"]] = float(row["HW Threshold"])
+                        else:
+                            self.axo_thresholds[axo_version][row["L1 Seed"]] = float(row["Threshold"])
 
             self.cicada_thresholds = {}
+            for cicada_version in config["cicada_versions"]:
+                self.cicada_thresholds[cicada_version] = {}
             with open(f"config/cicada_thresholds_{cicada_version}.csv", newline='') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
-                    self.cicada_thresholds[row["L1 Seed"]] = float(row["Threshold"])
+                    self.cicada_thresholds[cicada_version][row["L1 Seed"]] = float(row["Threshold"])
 
         # Define axes for histograms # TODO: maybe move this into a dictionary elsewhere 
         # String based axes
@@ -540,17 +568,16 @@ class MakeAXOHists (processor.ProcessorABC):
             [], growth=True, name="object", label="Object"
         )
         # Regular axes
-        if self.axo_version=="v3":
-            self.axo_score_axis = hist.axis.Regular(
-                1000, 0, 3000, name="axo_score", label='AXOL1TL Anomaly Score'
+        self.axo_score_axes = {}
+        for axo_version in self.config["axo_versions"]:
+            self.axo_score_axes[axo_version] = hist.axis.Regular(
+                1000, 0, self.config["anomaly_score_max"]["AXO"][axo_version], name=f"axo_score_{axo_version}", label='AXOL1TL Anomaly Score'
             )
-        else:
-            self.axo_score_axis = hist.axis.Regular(
-                2000, 0, 2000, name="axo_score", label='AXOL1TL Anomaly Score'
+        self.cicada_score_axes = {}
+        for cicada_version in self.config["cicada_versions"]:
+            self.cicada_score_axes[cicada_version] = hist.axis.Regular(
+                1000, 0, self.config["anomaly_score_max"]["CICADA"][cicada_version], name=f"cicada_score_{cicada_version}", label='CICADA Anomaly Score'
             )
-        self.cicada_score_axis = hist.axis.Regular(
-            256, 0, 256, name="cicada_score", label='CICADA Anomaly Score'
-        )
         self.mult_axis = hist.axis.Regular(
             200, 0, 201, name="mult", label=r'$N_{obj}$'
         )
@@ -603,9 +630,10 @@ class MakeAXOHists (processor.ProcessorABC):
         for trigger in self.trigger_paths:
             print("Trigger",trigger)
             if (trigger[0:3] == "DST"):
-                if (("AXO" in trigger) or ("CICADA" in trigger)):
-                    if (not self.config["use_emulated_score"]):
-                        assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
+                if (("AXO" in trigger) or (not self.config["use_axo_emulated_score"])):
+                    assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
+                elif (("CICADA" in trigger) or (not self.config["use_cicada_emulated_score"])):
+                    assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
                 else:
                     assert trigger[4:] in events.DST.fields, f"Error: {trigger[4:]} not in available DST paths: {events.DST.fields}"
             if trigger[0:3] == "HLT":
@@ -631,23 +659,23 @@ class MakeAXOHists (processor.ProcessorABC):
                 if trigger_path == "all_available_triggers":
                     print("all_available_triggers")
                     events_trig = events
-                elif ("AXO" in trigger_path) and self.config["use_emulated_score"]:
+                elif ("AXO" in trigger_path) and self.config["use_axo_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     axo_trigger_name = (re.search(r"(AXO\w+)", trigger_path)[0]).replace("_", "")
-                    if self.axo_version not in ["v3", "v4"]:
-                        raise NotImplementedError(f"axo version {self.axo_version} not implemented")
-                    score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
-                    threshold = self.axo_thresholds[axo_trigger_name]
+                    if self.config["axo_version_trig"] not in ["v3", "v4"]:
+                        raise NotImplementedError(f"axo version {self.config["axo_version_trig"]} not implemented")
+                    score_attr = f"{'v3' if self.config["axo_version_trig"] == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.config["axo_version_trig"]}"
+                    threshold = self.axo_thresholds[self.config["axo_version_trig"]][axo_trigger_name]
                     events_trig = events[getattr(events.axol1tl, score_attr) > threshold]
-                elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
+                elif ("CICADA" in trigger_path) and self.config["use_cicada_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     if not self.config["is_l1nano"]:
                         raise NotImplementedError(f"CICADA score is not implemented in Scouting NanoAOD")
-                    if self.cicada_version not in ["2024"]:
-                        raise NotImplementedError(f"cicada version {self.cicada_version} not implemented")
+                    if self.config["cicada_version_trig"] not in ["2024", "2025"]:
+                        raise NotImplementedError(f"cicada version {self.config["cicada_version_trig"]} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
-                    attr_name = f"CICADA{self.cicada_version}"
-                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
+                    attr_name = f"CICADA{self.config["cicada_version_trig"]}"
+                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds["cicada_version_trig"][cicada_trigger_name]]
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
@@ -695,20 +723,22 @@ class MakeAXOHists (processor.ProcessorABC):
                         events_l1_selection = dak.where(getattr(events_ortho.L1,i)==1, 1, events_l1_selection) # if triggered by a different bit set to 0
                     events_l1_selection_bool = dak.values_astype(events_l1_selection,bool)
                     events_trig = events_ortho[events_l1_selection_bool]
-                elif ("AXO" in trigger_path) and self.config["use_emulated_score"]:
+                elif ("AXO" in trigger_path) and self.config["use_axo_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     axo_trigger_name = (re.search(r"(AXO\w+)", trigger_path)[0]).replace("_", "")
-                    if self.axo_version not in ["v3", "v4"]:
-                        raise NotImplementedError(f"axo version {self.axo_version} not implemented")
-                    score_attr = f"{'v3' if self.axo_version == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version}"
+                    if self.config["axo_version_trig"] not in ["v3", "v4"]:
+                        raise NotImplementedError(f"axo version {self.config["axo_version_trig"]} not implemented")
+                    score_attr = f"{'v3' if self.config["axo_version_trig"] == 'v3' else 'v4'}_AXOScore" if self.config["is_l1nano"] else f"score_{self.axo_version_trig}"
                     events_trig = events_ortho[getattr(events_ortho.axol1tl, score_attr) > self.axo_thresholds[axo_trigger_name]]
-                elif ("CICADA" in trigger_path) and self.config["use_emulated_score"]:
+                elif ("CICADA" in trigger_path) and self.config["use_cicada_emulated_score"]:
                     print(trigger_path + " (emulated)")
                     if not self.config["is_l1nano"]:
                         raise NotImplementedError(f"CICADA score is not implemented in Scouting NanoAOD")
+                    if self.config["cicada_version_trig"] not in ["2024", "2025"]:
+                        raise NotImplementedError(f"cicada version {self.config["cicada_version_trig"]} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
-                    events_trig = events_ortho[getattr(events_ortho.CICADA2024, "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
-
+                    attr_name = f"CICADA{self.config["cicada_version_trig"]}"
+                    events_trig = events_ortho[getattr(getattr(events_ortho, attr_name), "CICADAScore") > self.cicada_thresholds[cicada_trigger_name]]
                 else: # select events passing the orthogonal dataset and the trigger of interest
                     trig_br = getattr(events_ortho,trigger_path.split('_')[0])
                     trig_path = '_'.join(trigger_path.split('_')[1:])
@@ -811,7 +841,7 @@ def main():
 
     config, timestamp = load_config()
     
-    if config["use_emulated_score"]:
+    if config["use_axo_emulated_score"] or config["use_cicada_emulated_score"]:
         client.upload_file("config.zip");
 
     dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])

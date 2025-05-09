@@ -49,20 +49,21 @@ trigger_labels:
     'L1_CICADA_Tight' : ' CICADA Tight'
     'L1_CICADA_VLoose' : 'CICADA VLoose'
     'L1_CICADA_VTight' : 'CICADA VTight'
+    'L1_SingleMu22' : 'Single Muon ($>22$ GeV)'
+    'L1_HTT280er' : '$H_T>280$ GeV'
 
 label_templates:
     'totals': # histograms to make per event
-        'anomaly_score': 'Anomaly Score'
-        'axo_score': 'AXOL1TL HW Anomaly Score'
-        'cicada_score': 'CICADA Anomaly Score'
+        'axo_score': 'AXOL1TL HW Anomaly Score ({})'
+        'cicada_score': 'CICADA Anomaly Score ({})'
         'ht': '$H_T$ [GeV]'
         'met': '$p^{miss}_{T}$ [GeV]'
         'mult': 'Total Object Multiplicity'
         'pt': 'Total Object $p_T$ [GeV]'
     'object_type': # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
         'ht': '${} \sum p_T$ [GeV]'
-        'mult': 'Number of ${}$s'
-        'pt': 'All $p_T({})$ [GeV]'
+        'mult': '$N_{{{}}}$'
+        'pt': '$p__{T({})}$ [GeV]'
         'eta': 'All ${}$ $\eta$'
         'phi': 'All ${}$ $\phi$'
     'object': # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
@@ -126,7 +127,9 @@ rebin:
 xlims:
     "l1_ht": [0,1000] # GeV
     "l1_met": [0,170] # GeV
-    "axo_score" : [0,1000]
-    "cicada_score" : [0,160]
+    "axo_score_v3" : [0,2000]
+    "axo_score_v4" : [0,1000]
+    "cicada_score_2024" : [0,160]
+    "cicada_score_2025" : [0,160]
     
 
