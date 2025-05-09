@@ -377,19 +377,23 @@ def calculate_observables(self, observables, events):
 
     # calculate per-event observables
     if "axo_score" in observables["per_event"]:
-        observable_dict["per_event"]["axo_score"] = get_axo_score_hist_values(
-            self.has_scores, 
-            self.axo_version, 
-            self.config["is_l1nano"],
-            events
-        )
+        observable_dict["per_event"]["axo_score"] = {}
+        for axo_version in self.config["axo_versions"]:
+            observable_dict["per_event"]["axo_score"][axo_version] = get_axo_score_hist_values(
+                self.config["has_scores"], 
+                axo_version, 
+                self.config["is_l1nano"],
+                events
+            )
     if "cicada_score" in observables["per_event"]:
-        observable_dict["per_event"]["cicada_score"] = get_cicada_score_hist_values(
-            self.has_scores, 
-            self.cicada_version,
-            self.config["is_l1nano"], 
-            events
-        )
+        observable_dict["per_event"]["cicada_score"] = {}
+        for cicada_version in self.config["cicada_versions"]:
+            observable_dict["per_event"]["cicada_score"][cicada_version] = get_cicada_score_hist_values(
+                self.config["has_scores"], 
+                cicada_version,
+                self.config["is_l1nano"], 
+                events
+            )
     for observable in observables["per_event"]:
         if not "_score" in observable:
             for reconstruction_level in self.config["objects"] if self.config["objects"] else []:

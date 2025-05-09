@@ -1,19 +1,26 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list.json"  # name of json file containing root file paths
+json_filename: "file_list.json"     # name of json file containing root file paths
 dataset_name: "2024I_10"            # name of key within json containing dataset
-has_scores: True                 # whether the files contain axo anomaly score branches
-axo_version: "v4"                # which axo version to use when using emulated values
-cicada_version: "2024"           # which cicada version to use when using emulated values
-use_emulated_score: False        # whether to use emulated axo score instead of the DST paths
-is_l1nano: False                 # whether files are l1nano format (assumed scouting nano if False)
+has_scores: True                    # whether the files contain axo anomaly score branches
+axo_versions:                       # which axo versions to use for score histograms
+    # - "v3"
+    - "v4"
+cicada_versions:                    # which cicada version to use for score histograms
+    - "2024"
+    # - "2025"
+use_axo_emulated_score: True       # whether to use emulated axo score instead of the DST paths
+axo_version_trig: "v3"              # which emulated axo version to use for triggering (if above true)
+use_cicada_emulated_score: False    # whether to use emulated axo score instead of the DST paths
+cicada_version_trig: "2024"         # which emulated cicada version to use for triggering (if above true)
+is_l1nano: False                    # whether files are l1nano format (assumed scouting nano if False)
 
 # Coffea configurations  --------------------------------------
 n_files: -1                               # number of files to process (-1 for all)
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: True                    # create a preprocessing json file
+do_preprocessing: False                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -66,12 +73,12 @@ histograms_1d:
     - "met"
     #- "mult"
     # - "pt"
-    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    - "ht"
-    - "mult"
-    - "pt"
-    - "eta"
-    - "phi"
+    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    # - "ht"
+    # - "mult"
+    # - "pt"
+    # - "eta"
+    # - "phi"
     # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
     # - "pt"
     # - "eta"
@@ -181,12 +188,12 @@ triggers:
 
     # - 'DST_PFScouting_AXOVLoose'
     # - 'DST_PFScouting_AXOLoose' 
-    # - 'DST_PFScouting_AXONominal'
+    - 'DST_PFScouting_AXONominal'
     # - 'DST_PFScouting_AXOTight'
     # - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
-    # - 'DST_PFScouting_CICADAMedium'
+    - 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'
@@ -198,7 +205,7 @@ triggers:
     # - 'L1_SingleMu22'
     # - 'L1_HTT280er'
 
-orthogonal_trigger: 'L1_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
+orthogonal_trigger: 'DST_PFScouting_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
@@ -239,12 +246,13 @@ object_cleaning:
 
 
 # Module to run -------------------------------------------
-# module: "default"
-module: "efficiency"
+module: "default"
+# module: "efficiency"
 # module: "purity" 
 # module: "pileup" # TODO: implement
 
-# # Object labeling dictionary -------------------------------------------
+
+# Object labeling dictionary -------------------------------------------
 # object_label:
 #     "ScoutingPFJet": "j"
 #     "ScoutingElectron": "e"
@@ -256,6 +264,12 @@ module: "efficiency"
 #     "L1Mu": ""L1\mu""
 
 
-
-
+# score histogram max values -------------------------------------------
+anomaly_score_max:
+    "AXO":
+        "v3": 3000
+        "v4": 4000
+    "CICADA":
+        "2024": 256
+        "2025": 256
 
