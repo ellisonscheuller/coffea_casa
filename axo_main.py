@@ -118,7 +118,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 hist_dict, 
                                 f"{histogram}_{axo_version}",
                                 dataset, 
-                                observable_calculations["per_event"][histogram][axo_version], 
+                                observable_calculations["per_event"][f"{histogram}_{axo_version}"], 
                                 trigger_path, 
                                 f"{histogram}_{axo_version}"
                             )
@@ -128,7 +128,7 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 hist_dict, 
                                 f"{histogram}_{cicada_version}", 
                                 dataset, 
-                                observable_calculations["per_event"][histogram][cicada_version], 
+                                observable_calculations["per_event"][f"{histogram}_{cicada_version}"], 
                                 trigger_path, 
                                 f"{histogram}_{cicada_version}"
                             )
@@ -207,24 +207,38 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                 raise NotImplementedError("Cannot create 2d histogram of mixed categories per_diobject_pair and per_object or per_object_type")
 
             for reconstruction_level in self.config["objects"] if self.config["objects"] else []:
-                if x_cat=="per_event": 
-                    if "_score" in x_var:
-                        x_obs = observable_calculations["per_event"][x_var]
-                    else: 
-                        x_obs = observable_calculations["per_event"][reconstruction_level][x_var]
-
-                if y_cat=="per_event": 
-                    if "_score" in y_var:
-                        y_obs = observable_calculations["per_event"][y_var]
-                    else: 
-                        y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
 
                 # fill histogram if neither category is per object
                 if (x_cat=="per_event") and (y_cat=="per_event"):
-                    hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
-                    continue
-            
+                    if x_var=="axo_score":
+                        for axo_version in self.config["axo_versions"]:
+                            x_obs = observable_calculations["per_event"][x_var+"_"+axo_version]
+                            if "y_var"=="cicada_score":
+                                for cicada_version in self.config["cicada_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+cicada_version]
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+axo_version, y_var+"_"+cicada_version)
+                            else:
+                                y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+                                hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+reconstruction_level+"_"+y_var
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+axo_version, y_var)
+                    elif x_var=="cicada_score":
+                        for cicada_version in self.config["cicada_versions"]:
+                            x_obs = observable_calculations["per_event"][x_var+"_"+cicada_version]
+                            if "y_var"=="axo_score":
+                                for axo_version in self.config["axo_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+axo_version]
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+cicada_version, y_var+"_"+axo_version)
+                            else:
+                                y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+                                hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+reconstruction_level+"_"+y_var
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+cicada_version, y_var)
+                    else:
+                        x_obs = observable_calculations["per_event"][reconstruction_level][x_var]
+                        y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+                        hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)            
 
                 x_is_object = x_cat in ["per_object_type", "per_object"]
                 y_is_object = y_cat in ["per_object_type", "per_object"]
@@ -261,30 +275,73 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
 
 
                         # fill histogram if we already have all info
-                        hist_name = ""
                         if (x_cat=="per_event") and (y_cat=="per_object_type"):
-                            if (y_var=="mult") or (y_var=="ht"):
-                                x_obs_mod = x_obs
+                            if x_var=="axo_score":
+                                for axo_version in self.config["axo_versions"]:
+                                    x_obs = observable_calculations["per_event"][x_var+"_"+axo_version]
+                                    if (y_var=="mult") or (y_var=="ht"):
+                                        x_obs_mod = x_obs
+                                    else:
+                                        y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                        x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                        x_obs_mod = dak.flatten(x_obs_broadcast)
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+object_type+"_"+y_var
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var+"_"+axo_version, y_var)
+                            elif x_var=="cicada_score":
+                                for cicada_version in self.config["cicada_versions"]:
+                                    x_obs = observable_calculations["per_event"][x_var+"_"+cicada_version]
+                                    if (y_var=="mult") or (y_var=="ht"):
+                                        x_obs_mod = x_obs
+                                    else:
+                                        y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                        x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                        x_obs_mod = dak.flatten(x_obs_broadcast)
+                                    hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+object_type+"_"+y_var
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var+"_"+cicada_version, y_var)
                             else:
-                                y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
-                                x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
-                                x_obs_mod = dak.flatten(x_obs_broadcast)
-                            hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
-                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
+                                x_obs = observable_calculations["per_event"][reconstruction_level][x_var]
+                                if (y_var=="mult") or (y_var=="ht"):
+                                    x_obs_mod = x_obs
+                                else:
+                                    y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                    x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                    x_obs_mod = dak.flatten(x_obs_broadcast)
+                                hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
                             
                         elif (x_cat=="per_object_type") and (y_cat=="per_event"):
-                            if (x_var=="mult") or (x_var=="ht"):
-                                y_obs_mod = y_obs
+                            if y_var=="axo_score":
+                                for axo_version in self.config["axo_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+axo_version]
+                                    if (x_var=="mult") or (x_var=="ht"):
+                                        y_obs_mod = y_obs
+                                    else:
+                                        x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                        y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                        y_obs_mod = dak.flatten(y_obs_broadcast)
+                                    hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var+"_"+axo_version)
+                            elif y_var=="cicada_score":
+                                for cicada_version in self.config["cicada_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+cicada_version]
+                                    if (x_var=="mult") or (x_var=="ht"):
+                                        y_obs_mod = y_obs
+                                    else:
+                                        x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                        y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                        y_obs_mod = dak.flatten(y_obs_broadcast)
+                                    hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var+"_"+cicada_version)
                             else:
-                                x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
-                                y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
-                                y_obs_mod = dak.flatten(y_obs_broadcast)
-                            hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
-                            
-                        if hist_name!="":
-                            continue
-                        
+                                y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+                                if (x_var=="mult") or (x_var=="ht"):
+                                    y_obs_mod = y_obs
+                                else:
+                                    x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object_type"][reconstruction_level][object_type]["mult"])
+                                    y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                    x_obs_mod = dak.flatten(y_obs_broadcast)
+                                hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
 
                         # handle per_object cases
                         if (x_cat=="per_object") or (y_cat=="per_object"):
@@ -300,12 +357,30 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                     if y_cat=="per_object_type":
                                         raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                                     if y_cat=="per_event":
-                                        x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
-                                        y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
-                                        y_obs_mod = dak.flatten(y_obs_broadcast)
-                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
-                                        continue
+                                        if y_var=="axo_score":
+                                            for axo_version in self.config["axo_versions"]:
+                                                y_obs = observable_calculations["per_event"][y_var+"_"+axo_version]
+                                                x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                                y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                                y_obs_mod = dak.flatten(y_obs_broadcast)
+                                                hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var+"_"+axo_version)
+                                        elif y_var=="cicada_score":
+                                            for cicada_version in self.config["cicada_versions"]:
+                                                y_obs = observable_calculations["per_event"][y_var+"_"+cicada_version]
+                                                x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                                y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                                y_obs_mod = dak.flatten(y_obs_broadcast)
+                                                hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                                fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var+"_"+cicada_version)
+                                        else:
+                                            y_obs = observable_calculations["per_event"][reconstruction_level][y_var]
+                                            x_obs_jagged = dak.unflatten(x_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                            y_obs_broadcast = dak.broadcast_arrays(y_obs, x_obs_jagged)[0]
+                                            y_obs_mod = dak.flatten(y_obs_broadcast)
+                                            hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs_mod, trigger_path, x_var, y_var)
+
                                     if y_cat=="per_object":
                                         hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
                                         fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
@@ -314,13 +389,29 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                                 if y_cat=="per_object":
                                     if x_cat=="per_object_type":
                                         raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
-                                    y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
-                                    x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
-                                    x_obs_mod = dak.flatten(x_obs_broadcast)
-                                    hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
-                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var)
-                                if hist_name!="":
-                                    continue
+                                    if x_var=="axo_score":
+                                        for axo_version in self.config["axo_versions"]:
+                                            x_obs = observable_calculations["per_event"][x_var+"_"+axo_version]
+                                            y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                            x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                            x_obs_mod = dak.flatten(x_obs_broadcast)
+                                            hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+object_type+"_"+str(i)+"_"+y_var
+                                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var+"_"+axo_version, y_var)
+                                    elif x_var=="cicada_version":
+                                        for cicada_version in self.config["cicada_versions"]:
+                                            x_obs = observable_calculations["per_event"][x_var+"_"+cicada_version]
+                                            y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                            x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                            x_obs_mod = dak.flatten(x_obs_broadcast)
+                                            hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+object_type+"_"+str(i)+"_"+y_var
+                                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var+"_"+cicada_version, y_var)
+                                    else:
+                                        x_obs = observable_calculations["per_event"][reconstruction_level][x_var]
+                                        y_obs_jagged = dak.unflatten(y_obs, observable_calculations["per_object"][reconstruction_level][object_type][f"counts_{i}"])
+                                        x_obs_broadcast = dak.broadcast_arrays(x_obs, y_obs_jagged)[0]
+                                        x_obs_mod = dak.flatten(x_obs_broadcast)
+                                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                        fill_hist_2d(hist_dict, hist_name, dataset, x_obs_mod, y_obs, trigger_path, x_var, y_var)
 
             # handle per_diobject_pair cases
             if (x_cat=="per_diobject_pair") or (y_cat=="per_diobject_pair"):
@@ -348,13 +439,32 @@ def run_the_megaloop(self,events_trig,hist_dict,branch_save_dict,dataset,trigger
                         if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                             hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
                         if (x_cat=="per_diobject_pair") and ("_score" in y_var):
-                            y_obs = y_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
-                            hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
+                            if y_var=="axo_score":
+                                for axo_version in self.config["axo_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+axo_version]
+                                    y_obs = y_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
+                                    hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}_{axo_version}"
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var+"_"+axo_version)
+                            elif y_var=="cicada_score":
+                                for cicada_version in self.config["cicada_versions"]:
+                                    y_obs = observable_calculations["per_event"][y_var+"_"+cicada_version]
+                                    y_obs = y_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
+                                    hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}_{cicada_version}"
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var, y_var+"_"+cicada_version) 
+                                
                         if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
-                            x_obs = x_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
-                            hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
-                        if hist_name!="":
-                            fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, axis_name_x, axis_name_y)
+                            if x_var=="axo_score":
+                                for axo_version in self.config["axo_versions"]:
+                                    x_obs = observable_calculations["per_event"][x_var+"_"+axo_version]
+                                    x_obs = x_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
+                                    hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{axo_version}_{y_var}"
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+axo_version, y_var)
+                            elif x_var=="cicada_score":
+                                for cicada_version in self.config["cicada_versions"]:
+                                    x_obs = observable_calculations["per_event"][x_var+"_"+cicada_version]
+                                    x_obs = x_obs[observable_calculations["per_diobject_pair"][reconstruction_level][f"{object_type_1}_{object_type_2}"]["event_mask"]]
+                                    hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{cicada_version}_{y_var}"
+                                    fill_hist_2d(hist_dict, hist_name, dataset, x_obs, y_obs, trigger_path, x_var+"_"+cicada_version, y_var) 
                             
         return hist_dict, branch_save_dict
        
@@ -429,8 +539,27 @@ def initialize_hist_dict(self,hist_dict):
         for reconstruction_level in self.config["objects"]:
             
             if (x_cat=="per_event") and (y_cat=="per_event"):
-                hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
+                if x_var=="axo_score":
+                    for axo_version in self.config["axo_versions"]:
+                        if y_var=="cicada_score":
+                            for cicada_version in self.config["cicada_versions"]:
+                                hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+axo_version], axis_map[y_var+"_"+cicada_version], hist_name)
+                        else:
+                            hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+reconstruction_level+"_"+y_var
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+axo_version], axis_map[y_var], hist_name)
+                elif x_var=="cicada_score":
+                    for cicada_version in self.config["cicada_versions"]:
+                        if y_var=="axo_score":
+                            for axo_version in self.config["axo_versions"]:
+                                hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+axo_version], axis_map[y_var+"_"+cicada_version], hist_name)
+                        else:
+                            hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+reconstruction_level+"_"+y_var
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+cicada_version], axis_map[y_var], hist_name)
+                else:
+                    hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                    create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                 continue
             
             x_is_object = x_cat in ["per_object_type", "per_object"]
@@ -455,14 +584,30 @@ def initialize_hist_dict(self,hist_dict):
                 
                 for object_type in self.config["objects"][reconstruction_level]:
 
-                    hist_name = ""
                     if (x_cat=="per_event") and (y_cat=="per_object_type"):
-                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                        if x_var=="axo_score":
+                            for axo_version in self.config["axo_versions"]:
+                                hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+object_type+"_"+y_var
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[f"{x_var}_{axo_version}"], axis_map[y_var], hist_name)
+                        elif x_var=="cicada_score":
+                            for cicada_version in self.config["cicada_versions"]:
+                                hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+object_type+"_"+y_var
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[f"{x_var}_{cicada_version}"], axis_map[y_var], hist_name)
+                        else:
+                            hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+y_var
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                     elif (x_cat=="per_object_type") and (y_cat=="per_event"):
-                        hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
-                    if hist_name!="":
-                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
-                        continue
+                        if y_var=="axo_score":
+                            for axo_version in self.config["axo_versions"]:
+                                hist_name = reconstruction_level+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[f"{y_var}_{axo_version}"], hist_name)
+                        elif y_var=="cicada_score":
+                            for cicada_version in self.config["cicada_versions"]:
+                                hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[f"{y_var}_{cicada_version}"], hist_name)
+                        else:
+                            hist_name = object_type+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                         
 
                     if (x_cat=="per_object") or (y_cat=="per_object"):
@@ -471,19 +616,37 @@ def initialize_hist_dict(self,hist_dict):
                             hist_name = ""
                             if x_cat=="per_object":
                                 if y_cat=="per_event":
-                                    hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                    if y_var=="axo_score":
+                                        for axo_version in self.config["axo_versions"]:
+                                            hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+axo_version
+                                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var+"_"+axo_version], hist_name)
+                                    elif y_var=="cicada_score":
+                                        for cicada_version in self.config["cicada_versions"]:
+                                            hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var+"_"+cicada_version
+                                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var+"_"+cicada_version], hist_name)
+                                    else:
+                                        hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+reconstruction_level+"_"+y_var
+                                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                                 if y_cat=="per_object_type":
                                     raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
                                 if y_cat=="per_object":
                                     hist_name = object_type+"_"+str(i)+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                             if y_cat=="per_object":
                                 if x_cat=="per_event":
-                                    hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                    if x_var=="axo_score":
+                                        for axo_version in self.config["axo_versions"]:
+                                            hist_name = reconstruction_level+"_"+x_var+"_"+axo_version+"_"+object_type+"_"+str(i)+"_"+y_var
+                                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+axo_version], axis_map[y_var], hist_name)
+                                    elif y_var=="cicada_score":
+                                        for cicada_version in self.config["cicada_versions"]:
+                                            hist_name = reconstruction_level+"_"+x_var+"_"+cicada_version+"_"+object_type+"_"+str(i)+"_"+y_var
+                                            create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var+"_"+cicada_version], axis_map[y_var], hist_name)
+                                    else:
+                                        hist_name = reconstruction_level+"_"+x_var+"_"+object_type+"_"+str(i)+"_"+y_var
+                                        create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
                                 if x_cat=="per_object_type":
                                     raise NotImplementedError("Cannot create 2d histogram of mixed categories per_object_type and per_object")
-                            if hist_name!="":
-                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[x_var], axis_map[y_var], hist_name)
-                                continue
 
         if (x_cat=="per_diobject_pair") or (y_cat=="per_diobject_pair"):
 
@@ -505,13 +668,26 @@ def initialize_hist_dict(self,hist_dict):
                         
                     if (x_cat=="per_diobject_pair") and (y_cat=="per_diobject_pair"):
                         hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{object_type_1}_{object_type_2}_{y_var}"
-                    if (x_cat=="per_diobject_pair") and ("_score" in y_var):
-                        hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
-                    if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
-                        hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}"
-                    if hist_name!="":
                         create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x], axis_map[axis_name_y], hist_name)
-                        
+                    if (x_cat=="per_diobject_pair") and ("_score" in y_var):
+                        if y_var=="axo_score":
+                            for axo_version in self.config["axo_versions"]:
+                                hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}_{axo_version}"
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x], axis_map[axis_name_y+"_"+axo_version], hist_name)
+                        elif y_var=="cicada_score":
+                            for cicada_version in self.config["cicada_versions"]:
+                                hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{y_var}_{cicada_version}"
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x], axis_map[axis_name_y+"_"+cicada_version], hist_name)
+                    if ("_score" in x_var) and (y_cat=="per_diobject_pair"):
+                        if x_var=="axo_score":
+                            for axo_version in self.config["axo_versions"]:
+                                hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{axo_version}_{y_var}"
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x+"_"+axo_version], axis_map[axis_name_y], hist_name)
+                        elif x_var=="cicada_score":
+                            for cicada_version in self.config["cicada_versions"]:
+                                hist_name = f"{object_type_1}_{object_type_2}_{x_var}_{cicada_version}_{y_var}"
+                                create_hist_2d(hist_dict, self.dataset_axis, self.trigger_axis, axis_map[axis_name_x+"_"+cicada_version], axis_map[axis_name_y], hist_name)
+
     return hist_dict
 
 # ###################################################################################################
@@ -675,7 +851,7 @@ class MakeAXOHists (processor.ProcessorABC):
                         raise NotImplementedError(f"cicada version {self.config["cicada_version_trig"]} not implemented")
                     cicada_trigger_name = (re.search(r"(CICADA\w+)", trigger_path)[0]).replace("_", "")
                     attr_name = f"CICADA{self.config["cicada_version_trig"]}"
-                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds["cicada_version_trig"][cicada_trigger_name]]
+                    events_trig = events[getattr(getattr(events, attr_name), "CICADAScore") > self.cicada_thresholds[self.config["cicada_version_trig"]][cicada_trigger_name]]
                 else:
                     print(trigger_path)
                     trig_br = getattr(events,trigger_path.split('_')[0])
