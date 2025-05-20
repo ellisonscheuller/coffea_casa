@@ -9,8 +9,8 @@ axo_versions:                       # which axo versions to use for score histog
 cicada_versions:                    # which cicada version to use for score histograms
     - "2024"
     # - "2025"
-use_axo_emulated_score: True       # whether to use emulated axo score instead of the DST paths
-axo_version_trig: "v3"              # which emulated axo version to use for triggering (if above true)
+use_axo_emulated_score: False       # whether to use emulated axo score instead of the DST paths
+axo_version_trig: "v4"              # which emulated axo version to use for triggering (if above true)
 use_cicada_emulated_score: False    # whether to use emulated axo score instead of the DST paths
 cicada_version_trig: "2024"         # which emulated cicada version to use for triggering (if above true)
 is_l1nano: False                    # whether files are l1nano format (assumed scouting nano if False)
@@ -20,7 +20,7 @@ n_files: -1                               # number of files to process (-1 for a
 coffea_step_size: 200_000                 # step size for coffea processor
 coffea_files_per_batch: 1                 # files per batch for coffea processor
 coffea_max_chunks: 300000                 # maximum number of chunks to process
-do_preprocessing: False                    # create a preprocessing json file
+do_preprocessing: True                    # create a preprocessing json file
 preprocessing_file: "preprocessed.json"
 visualize_task_graph: False               # save task graph as pdf (only use when processing 1 or 2 files)
 save_hists: True                          # save histograms using pickle
@@ -205,44 +205,44 @@ triggers:
     # - 'L1_SingleMu22'
     # - 'L1_HTT280er'
 
-orthogonal_trigger: 'DST_PFScouting_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
+orthogonal_trigger: 'L1_ZeroBias' #'DST_PFScouting_ZeroBias' # for efficiency studies
 
 # Object cleaning requirements -------------------------------------
 object_cleaning:
     "ScoutingPFJet": # https://cms-hlt-scouting.docs.cern.ch/PathsRecoContent/EventContent/
-        pt: [20.0, null] # GeV
-        eta: [-2.4, 2.4]
+        pt: [30.0, null] # GeV
+        eta: [-2.5, 2.5]
     "ScoutingElectron": # 
-        pt: [5.0, null] # GeV
-        eta: [-1.44, 1.44]
+        pt: [30.0, null] # GeV
+        eta: [-2.5, 2.5]
     "ScoutingMuonNoVtx": # 
         pt: [3.0, null] # GeV
         eta: [-10, 10]
     "ScoutingMuonVtx": # 
         pt: [3.0, null] # GeV
-        eta: [-10, 10]
+        eta: [-2.4, 2.4]
     "ScoutingPhoton": # 
         pt: [5.0, null] # GeV
         eta: [-1.44, 1.44]
     "L1Jet": # https://twiki.cern.ch/twiki/bin/view/CMSPublic/L1TJetsEtSum2023
-        #pt: [0.1, null] # GeV
-        pt: [30, 999.5] # GeV
-        eta: [-1.3, 1.3]
+        pt: [0.1, null] # GeV
+        # pt: [30, 999.5] # GeV
+        eta: [-10, 10]
     "L1EG": # https://twiki.cern.ch/twiki/bin/viewauth/CMSPublic/EgTau2023Performance
         pt: [0.1, null] # GeV
-        eta: [-2.5, 2.5]
+        eta: [-10, 10]
     "L1Mu":
         pt: [0.1, null] # GeV
-        eta: [-2.4, 2.4] # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
+        eta: [-10, 10] # https://twiki.cern.ch/twiki/bin/view/CMSPublic/Level1MuonTriggerPerformance2023
     "Jet":
         pt: [30.0, null] # GeV
-        eta: [-10, 10]
+        eta: [-2.5, 2.5]
     "Muon":
         pt: [3.0, null] # GeV
-        eta: [-10, 10]
+        eta: [-2.4, 2.4]
     "Electron":
-        pt: [5.0, null] # GeV
-        eta: [-10, 10] 
+        pt: [30.0, null] # GeV
+        eta: [-2.5, 2.5] 
 
 
 # Module to run -------------------------------------------
