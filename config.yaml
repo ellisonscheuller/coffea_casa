@@ -1,7 +1,11 @@
 ---
 # Data configurations --------------------------------------
-json_filename: "file_list.json"     # name of json file containing root file paths
-dataset_name: "2024I_10"            # name of key within json containing dataset
+
+#json_filename: "file_list_mc.json"     # name of json file 
+json_filename: "file_list.json"
+#containing root file paths
+#dataset_name: ["ZZ", "WZ", "WW"]
+dataset_name: "2024I"            # name of key within json containing dataset
 has_scores: True                    # whether the files contain axo anomaly score branches
 axo_versions:                       # which axo versions to use for score histograms
     # - "v3"
@@ -33,7 +37,7 @@ branch_writing_path: "root://eosuser.cern.ch://eos/user/"  # where to save outpu
 objects: 
     l1:
     - "L1Jet"
-    # - "L1EG"
+    - "L1EG"
     # - "L1Mu"
     # scouting:
     # - "ScoutingPFJet"
@@ -68,17 +72,17 @@ diobject_pairings: # Which invariant mass pairs to consider
 histograms_1d:
     per_event: # histograms to make per event
     - "axo_score"
-    # - "cicada_score"
+    #- "cicada_score"
     - "ht"
     - "met"
-    #- "mult"
-    # - "pt"
-    # per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-    # - "ht"
-    # - "mult"
-    # - "pt"
-    # - "eta"
-    # - "phi"
+    - "mult"
+    - "pt"
+    per_object_type: # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
+    - "ht"
+    - "mult"
+    - "pt"
+    - "eta"
+    - "phi"
     # per_object: # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
     # - "pt"
     # - "eta"
@@ -190,10 +194,10 @@ triggers:
     # - 'DST_PFScouting_AXOLoose' 
     - 'DST_PFScouting_AXONominal'
     # - 'DST_PFScouting_AXOTight'
-    # - 'DST_PFScouting_AXOVTight'
+    - 'DST_PFScouting_AXOVTight'
     # - 'DST_PFScouting_CICADAVLoose'
     # - 'DST_PFScouting_CICADALoose'
-    - 'DST_PFScouting_CICADAMedium'
+    #- 'DST_PFScouting_CICADAMedium'
     # - 'DST_PFScouting_CICADATight'
     # - 'DST_PFScouting_CICADAVTight'
     # - 'DST_PFScouting_DoubleMuon'

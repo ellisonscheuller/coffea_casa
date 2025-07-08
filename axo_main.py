@@ -48,9 +48,31 @@ fsspec.config.conf['xrootd'] = {'timeout': 600}
 ####################################################################################################
 # HELPER FUNCTIONS FOR PROCESSOR
 
+
 def preprocess_dataset(dataset, config):
     """Handles preprocessing of dataset."""
     tstart = time.time()
+
+     # Print a few files before preprocessing
+    dataset_name = config["dataset_name"]
+    file_list = dataset[dataset_name]["files"]
+
+    # Confirm structure
+    print("✅ file_list is of type:", type(file_list))
+
+    # Convert dict to list of file dicts
+    if isinstance(file_list, dict):
+        file_dicts = [{"file": f, "object_path": obj} for f, obj in file_list.items()]
+        
+    elif isinstance(file_list, list):
+        # fallback: assume object_path is always "Events"
+        file_dicts = [{"file": f, "object_path": "Events"} for f in file_list]
+    else:
+        raise ValueError("Unexpected type for file_list")
+
+    print("First few file dicts to be passed into preprocess():")
+    for f in file_dicts[:3]:
+        print(f)
     
     if config["do_preprocessing"]:
         dataset_runnable, dataset_updated = preprocess(
@@ -824,7 +846,7 @@ class MakeAXOHists (processor.ProcessorABC):
        
         # Run the different modules
         if self.config["module"] == "default" or self.config["module"] == "purity": 
-            # This module makes 1D histograms for the triggers and objects specified in the configuration file
+            # This module makes 1D histograms for the triggers and objects specified in the configuration file 
             assert ("test" in self.config["dataset_name"]) or ("10" in self.config["dataset_name"], 
                    "Error: cannot run default behaviour on entire dataset, stay below 10% e.g. 2024I_10")  #don't unblind!
             
@@ -1020,17 +1042,32 @@ def main():
     if config["use_axo_emulated_score"] or config["use_cicada_emulated_score"]:
         client.upload_file("config.zip");
 
-    dataset_skimmed = load_dataset(config["json_filename"], config["dataset_name"], config["n_files"])
+    # Handle multiple datasets
+    datasets = config["dataset_name"]
+    if isinstance(datasets, str):
+        datasets = [datasets]
+
+    all_hist_results = {}
+
+    for dataset_name in datasets:
+        print(f"\nProcessing dataset: {dataset_name}")
     
-    print(f"Processing {len(dataset_skimmed[config['dataset_name']]['files'])} files")
-    dataset_runnable = preprocess_dataset(dataset_skimmed, config)
-    hist_result = process_histograms(dataset_runnable, config)
-    print(hist_result)
+        dataset_skimmed = load_dataset(config["json_filename"], dataset_name, config["n_files"])
+        n_files = len(dataset_skimmed[dataset_name]["files"])
+        print(f"🔧 Found {n_files} files")
+    
+        # Set current dataset in config before passing it to other functions
+        config_current = config.copy()
+        config_current["dataset_name"] = dataset_name
+    
+        dataset_runnable = preprocess_dataset(dataset_skimmed, config_current)
+        hist_result = process_histograms(dataset_runnable, config_current)
+    
+        all_hist_results[dataset_name] = hist_result
+    
+        if config["save_hists"]:
+            save_histogram(hist_result, dataset_name, timestamp)
 
-    if config["save_hists"]:
-        save_histogram(hist_result, config["dataset_name"],timestamp)
-
-    print("Finished")
   
     
 ###################################################################################################

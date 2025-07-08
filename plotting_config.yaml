@@ -1,5 +1,5 @@
 cms_label : 'Preliminary'  # appears next to 'CMS' on top of plot
-normalized : False #True #
+normalized : True #
 log_scale : True 
 #log_scale : False
 use_xlims : True
@@ -20,6 +20,10 @@ dataset_titles:
     '2024G_10': '10% 2024G'
     '2024H_10': '10% 2024H'
     '2024I_10': '10% 2024I'
+    'ZZ': 'ZZ'
+    'WZ': 'WZ'
+    'WW': 'WW'
+    
 
 trigger_labels:
     'all_available_triggers' : 'All triggers'
@@ -61,11 +65,17 @@ label_templates:
         'mult': 'Total Object Multiplicity'
         'pt': 'Total Object $p_T$ [GeV]'
     'object_type': # histograms by object type, e.g. total L1 jet multiplicity & pT of all L1 jets in event
-        'ht': '${} \sum p_T$ [GeV]'
-        'mult': '$N_{{{}}}$'
-        'pt': '$p__{T({})}$ [GeV]'
-        'eta': 'All ${}$ $\eta$'
-        'phi': 'All ${}$ $\phi$'
+        # 'ht': '${} \sum p_T$ [GeV]'
+        # 'mult': '$N_{{{}}}$'
+        # 'pt': '$p__{T({})}$ [GeV]'
+        # 'eta': 'All ${}$ $\eta$'
+        # 'phi': 'All ${}$ $\phi$'
+        'ht': '${prefix} \sum p_T$ [GeV]'
+        'mult': '$N_{{{prefix}}}$'
+        'pt': '$p_{{T({prefix})}}$ [GeV]'
+        'eta': 'All ${prefix}$ $\eta$'
+        'phi': 'All ${prefix}$ $\phi$'
+
     'object': # histograms by object type, pt ordered, e.g. pT of leading and subleading jets
         'pt': '{} ${}$ $p_T$ [GeV]'
         'eta': '{} ${}$ $\eta$'
